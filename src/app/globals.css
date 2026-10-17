@@ -149,3 +149,43 @@
   );
   background-size: 24px 24px;
 }
+
+/* Thin, token-colored scrollbar for app scroll regions (chat, lists). */
+@utility scrollbar-app {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
+  }
+}
+
+/* CSS-art cover patterns for the workspace gallery cards. */
+@utility cover-dots {
+  background-image: radial-gradient(rgb(255 255 255 / 14%) 1px, transparent 1.5px);
+  background-size: 14px 14px;
+}
+
+@utility cover-lines {
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgb(255 255 255 / 8%) 0 2px,
+    transparent 2px 12px
+  );
+}
+
+@utility cover-grid {
+  background-image: linear-gradient(rgb(255 255 255 / 7%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 7%) 1px, transparent 1px);
+  background-size: 22px 22px;
+}

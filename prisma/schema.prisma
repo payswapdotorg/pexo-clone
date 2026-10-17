@@ -1,0 +1,99 @@
+// PC2 data layer — SQLite via Prisma (PRODUCT-SPEC §5, AGENT-PROTOCOL credit
+// contract). DB file lands at db/pexo.db (gitignored via *.db).
+datasource db {
+  provider = "sqlite"
+  url      = "file:../db/pexo.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String    @id @default(cuid())
+  name      String
+  email     String    @unique
+  credits   Int       @default(100)
+  plan      String    @default("free")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime   @updatedAt
+  projects  Project[]
+}
+
+model Project {
+  id            String     @id
+  title         String
+  status        String     @default("working")
+  confirmPolicy String     @default("always")
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages      Message[]
+  artifacts     Artifact[]
+  feedbacks     Feedback[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([userId, createdAt])
+}
+
+model Message {
+  id          String     @id @default(cuid())
+  projectId   String
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  role        String
+  markdown    String
+  stage       String?
+  attachments Json?
+  createdAt   DateTime   @default(now())
+  artifacts   Artifact[]
+
+  @@index([projectId, createdAt])
+}
+
+model Artifact {
+  id          String    @id @default(cuid())
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  messageId   String?
+  message     Message?  @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  kind        String
+  url         String
+  filename    String
+  durationSec Int?
+  createdAt   DateTime  @default(now())
+
+  @@index([projectId])
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  rating    String
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+// No relation to Project on purpose: credit events survive project deletion.
+model CreditEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String?
+  stage     String
+  amount    Int
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+// No relation to Project on purpose: deletion is explicit in the project
+// DELETE route (events are derived state, not relational state).
+model ProjectEvent {
+  id        Int      @id @default(autoincrement())
+  projectId String
+  type      String
+  payload   Json
+  createdAt DateTime @default(now())
+
+  @@index([projectId, id])
+}

@@ -557,6 +557,451 @@ export const CREDITS_FAQ: { q: string; a: string }[] = [
   },
 ];
 
+/* ------------------------------------------------------ app: workspace -- */
+
+export const WHATS_NEW: { title: string; text: string }[] = [
+  {
+    title: "Meet your video agent",
+    text: "Describe the video you want in plain words. The agent drafts the plan, asks the questions only you can answer, and sets sensible defaults before anything renders.",
+  },
+  {
+    title: "Preview before it renders",
+    text: "Every project shows a still frame and a second-by-second timeline first. Comment, adjust, and only spend render credits once you give an explicit go.",
+  },
+  {
+    title: "Bring your own brief",
+    text: "Paste a product link, attach a document or an image, or start from a template card. The agent folds whatever you already have into the plan.",
+  },
+];
+
+export const QUICK_STARTS: { id: string; label: string; prompt: string }[] = [
+  {
+    id: "animation",
+    label: "Make an Animation",
+    prompt:
+      "Make a 10-second 2D animation of a paper boat crossing a rain puddle, gentle motion, muted palette, seamless loop.",
+  },
+  {
+    id: "short-film",
+    label: "Create a Short Film",
+    prompt:
+      "Create a 45-second cinematic short about a night baker closing up shop, warm tungsten light, no dialogue.",
+  },
+  {
+    id: "explainer",
+    label: "Make an Explainer",
+    prompt:
+      "Make a 60-second explainer on why the sky turns red at sunset, kinetic type over simple diagrams, friendly tone.",
+  },
+  {
+    id: "ugc-ad",
+    label: "Create a UGC Ad",
+    prompt:
+      "Create a 20-second UGC-style ad for a stainless steel water bottle, handheld feel, one honest hook, clear call to action.",
+  },
+];
+
+/** CSS-art cover config (gradients are Tailwind classes; pattern is a css utility). */
+export interface GalleryCard {
+  title: string;
+  blurb: string;
+  prompt: string;
+  gradient: string;
+  pattern?: "dots" | "lines" | "grid";
+}
+
+export interface GalleryTab {
+  id: string;
+  label: string;
+  cards: GalleryCard[];
+}
+
+export const GALLERY_TABS: GalleryTab[] = [
+  {
+    id: "template",
+    label: "Template",
+    cards: [
+      {
+        title: "30-second product promo",
+        blurb: "A tight 16:9 promo cut built from your product page.",
+        prompt:
+          "Make a 30-second 16:9 promo for my product: bold claim up front, three feature beats, brand end card.",
+        gradient: "from-amber-500/70 via-orange-600/50 to-stone-900",
+        pattern: "grid",
+      },
+      {
+        title: "Vertical social teaser",
+        blurb: "A 9:16 teaser with on-beat text pops.",
+        prompt:
+          "Create a 12-second vertical teaser for social: hook in the first two seconds, fast cuts, bold text pops.",
+        gradient: "from-rose-600/60 via-red-800/40 to-stone-900",
+        pattern: "dots",
+      },
+      {
+        title: "Kinetic-type explainer",
+        blurb: "Teach one idea with animated type and steady pacing.",
+        prompt:
+          "Make a 45-second kinetic typography explainer for the idea in my brief, clean type, steady pacing.",
+        gradient: "from-stone-400/50 via-stone-600/40 to-stone-900",
+        pattern: "lines",
+      },
+      {
+        title: "Seamless logo loop",
+        blurb: "A 5-second brand loop whose last frame matches its first.",
+        prompt:
+          "Make a 5-second seamless logo loop animation for my brand, minimal motion, loop-perfect final frame.",
+        gradient: "from-teal-700/60 via-emerald-900/40 to-stone-900",
+      },
+      {
+        title: "UGC-style ad",
+        blurb: "Handheld feel, honest voice, one clear CTA.",
+        prompt:
+          "Create a 20-second UGC-style ad with a handheld feel, one honest hook, and a clear call to action at the end.",
+        gradient: "from-violet-800/60 via-purple-900/40 to-stone-900",
+        pattern: "dots",
+      },
+    ],
+  },
+  {
+    id: "discover",
+    label: "Discover",
+    cards: [
+      {
+        title: "One brief, nine cuts",
+        blurb: "A full ad set spun from a single product page.",
+        prompt:
+          "Read my product page and cut a hero ad plus two short social variants from the same brief.",
+        gradient: "from-amber-600/70 via-yellow-700/40 to-stone-900",
+        pattern: "grid",
+      },
+      {
+        title: "Launch-day teaser",
+        blurb: "Countdown energy with a single bold promise.",
+        prompt:
+          "Make a 15-second launch teaser with countdown energy, one bold promise, and a clean logo sting.",
+        gradient: "from-fuchsia-700/50 via-rose-900/40 to-stone-900",
+      },
+      {
+        title: "Podcast clip to reels",
+        blurb: "Turn a long conversation into punchy verticals.",
+        prompt:
+          "Turn my podcast episode into three 30-second vertical reels with captioned highlight moments.",
+        gradient: "from-lime-600/60 via-emerald-700/40 to-stone-900",
+        pattern: "lines",
+      },
+      {
+        title: "Recruiting culture clip",
+        blurb: "A 30-second window into team life.",
+        prompt:
+          "Create a 30-second recruiting clip about team life at my startup, candid tone, no corporate gloss.",
+        gradient: "from-teal-600/60 via-emerald-800/40 to-stone-900",
+        pattern: "dots",
+      },
+      {
+        title: "Event aftermovie",
+        blurb: "Wrap a conference day into one rewatchable minute.",
+        prompt:
+          "Cut a 60-second aftermovie from my event brief: arrival, talks, crowd energy, closing card.",
+        gradient: "from-orange-700/60 via-amber-800/40 to-stone-900",
+      },
+      {
+        title: "Docs teaser",
+        blurb: "A 20-second nudge toward your documentation.",
+        prompt:
+          "Make a 20-second teaser that walks developers from landing page to first API call, terminal aesthetic.",
+        gradient: "from-stone-500/60 via-stone-700/40 to-stone-900",
+        pattern: "grid",
+      },
+    ],
+  },
+  {
+    id: "explainer",
+    label: "Explainer Videos",
+    cards: [
+      {
+        title: "How compound interest works",
+        blurb: "Growing bars and a timeline that pays you back.",
+        prompt:
+          "Make a 60-second explainer on how compound interest works, growing bars, one clear analogy, calm narration-free type.",
+        gradient: "from-lime-600/60 via-emerald-700/40 to-stone-900",
+      },
+      {
+        title: "Your product in one minute",
+        blurb: "Problem, twist, fix — with your UI in motion.",
+        prompt:
+          "Explain my product in 60 seconds: the problem, why old ways fail, and the fix — with animated UI moments.",
+        gradient: "from-amber-500/70 via-orange-700/40 to-stone-900",
+        pattern: "dots",
+      },
+      {
+        title: "Data story with three charts",
+        blurb: "Numbers that move instead of sit.",
+        prompt:
+          "Turn my three statistics into a 45-second animated data story with counters and one takeaway line.",
+        gradient: "from-teal-700/60 via-emerald-800/40 to-stone-900",
+        pattern: "grid",
+      },
+      {
+        title: "Comparison, side by side",
+        blurb: "Two options, one honest verdict.",
+        prompt:
+          "Make a 40-second side-by-side comparison of the two options in my brief, ending with an honest verdict.",
+        gradient: "from-violet-800/60 via-purple-900/40 to-stone-900",
+        pattern: "lines",
+      },
+      {
+        title: "Process, step by step",
+        blurb: "A workflow that draws itself.",
+        prompt:
+          "Animate my five-step process as a 50-second explainer where each step draws itself in sequence.",
+        gradient: "from-stone-400/50 via-stone-600/40 to-stone-900",
+      },
+    ],
+  },
+  {
+    id: "animation",
+    label: "Animation",
+    cards: [
+      {
+        title: "Character introduction",
+        blurb: "A mascot's first five seconds on screen.",
+        prompt:
+          "Animate a 15-second introduction for my mascot character: reveal, one signature move, freeze-frame end.",
+        gradient: "from-rose-600/60 via-red-800/40 to-stone-900",
+        pattern: "dots",
+      },
+      {
+        title: "Stop-motion paper city",
+        blurb: "Hand-crafted feel, frame-by-frame charm.",
+        prompt:
+          "Create a 30-second stop-motion style animation of a paper city waking up, tactile textures, gentle pacing.",
+        gradient: "from-teal-700/60 via-emerald-800/40 to-stone-900",
+        pattern: "grid",
+      },
+      {
+        title: "Whiteboard walkthrough",
+        blurb: "Idea sketching at a steady hand's speed.",
+        prompt:
+          "Make a 45-second whiteboard-style walkthrough of my concept, sketch lines that finish as the voice lands.",
+        gradient: "from-stone-400/50 via-stone-600/40 to-stone-900",
+      },
+      {
+        title: "Collage explainer",
+        blurb: "Cutouts that assemble into a story.",
+        prompt:
+          "Build a 35-second collage animation where newspaper cutouts assemble into my product story.",
+        gradient: "from-amber-600/70 via-yellow-700/40 to-stone-900",
+        pattern: "lines",
+      },
+      {
+        title: "Type in motion",
+        blurb: "One sentence, choreographed.",
+        prompt:
+          "Choreograph a 20-second kinetic type piece around one sentence from my brief, rhythm-led, high contrast.",
+        gradient: "from-fuchsia-700/50 via-purple-900/40 to-stone-900",
+      },
+    ],
+  },
+  {
+    id: "story",
+    label: "Story & Film",
+    cards: [
+      {
+        title: "The last shift",
+        blurb: "A 60-second cinematic short, no dialogue.",
+        prompt:
+          "Write and storyboard a 60-second cinematic short about a lighthouse keeper's last night on the job, no dialogue.",
+        gradient: "from-teal-800/60 via-slate-800/50 to-stone-900",
+        pattern: "lines",
+      },
+      {
+        title: "Market at dawn",
+        blurb: "A documentary vignette with ambient sound.",
+        prompt:
+          "Create a 50-second documentary-style vignette of a market waking at dawn, ambient bed, observed not narrated.",
+        gradient: "from-orange-700/60 via-amber-800/40 to-stone-900",
+      },
+      {
+        title: "Scene previsualization",
+        blurb: "Test the pacing before the expensive day.",
+        prompt:
+          "Pre-visualize my scene as a 30-second animatic: blocking, camera moves, and timing beats only.",
+        gradient: "from-stone-500/60 via-stone-700/40 to-stone-900",
+        pattern: "grid",
+      },
+      {
+        title: "Title sequence",
+        blurb: "A cold open that sets the tone.",
+        prompt:
+          "Design a 20-second title sequence for my project: mood-setting shots, restrained type, final card.",
+        gradient: "from-rose-800/60 via-red-900/40 to-stone-900",
+        pattern: "dots",
+      },
+    ],
+  },
+  {
+    id: "ads",
+    label: "Ads & UGC",
+    cards: [
+      {
+        title: "Feature showdown",
+        blurb: "Two tiers, one animated comparison.",
+        prompt:
+          "Make a 25-second ad comparing my two subscription tiers with animated callouts and a single closing hook.",
+        gradient: "from-violet-800/60 via-purple-900/40 to-stone-900",
+      },
+      {
+        title: "Unboxing, handheld",
+        blurb: "First-person feel, honest reactions.",
+        prompt:
+          "Create an 18-second UGC unboxing for my product: handheld camera, honest first reaction, logo end card.",
+        gradient: "from-amber-500/60 via-orange-700/40 to-stone-900",
+        pattern: "dots",
+      },
+      {
+        title: "Testimonial-style spot",
+        blurb: "One customer story, plainly told.",
+        prompt:
+          "Cut a 30-second testimonial-style ad from my customer's quote: their words, plain type, product b-roll.",
+        gradient: "from-teal-700/60 via-emerald-900/40 to-stone-900",
+        pattern: "lines",
+      },
+      {
+        title: "Retargeting bites",
+        blurb: "Six-second reminders for the almost-converted.",
+        prompt:
+          "Make three 6-second retargeting ads from my product's strongest single benefit, one message each.",
+        gradient: "from-rose-600/60 via-red-800/40 to-stone-900",
+      },
+      {
+        title: "Launch-week push",
+        blurb: "A countdown cadence across platforms.",
+        prompt:
+          "Plan a launch-week ad set: one 20-second hero and two 8-second teasers, consistent style, different hooks.",
+        gradient: "from-lime-600/60 via-emerald-700/40 to-stone-900",
+        pattern: "grid",
+      },
+    ],
+  },
+  {
+    id: "social",
+    label: "Social Media",
+    cards: [
+      {
+        title: "On-beat text pops",
+        blurb: "Vertical cuts cut to the beat.",
+        prompt:
+          "Make a 12-second vertical with on-beat text pops for my track, sharp cuts, captions locked to rhythm.",
+        gradient: "from-teal-600/60 via-emerald-900/40 to-stone-900",
+      },
+      {
+        title: "Carousel to motion",
+        blurb: "A static set becomes a scrolling teaser.",
+        prompt:
+          "Turn my five-slide carousel into a 15-second scrolling teaser with slide-in transitions.",
+        gradient: "from-amber-600/60 via-yellow-800/40 to-stone-900",
+        pattern: "lines",
+      },
+      {
+        title: "Quote card series",
+        blurb: "Typography-first, subtle drift.",
+        prompt:
+          "Create a series of three 8-second quote cards from my article, subtle drift, consistent type system.",
+        gradient: "from-stone-400/50 via-stone-600/40 to-stone-900",
+        pattern: "dots",
+      },
+      {
+        title: "Story sequence",
+        blurb: "Three frames that hold together.",
+        prompt:
+          "Design a three-part story sequence for my announcement: tease, reveal, CTA — 10 seconds each.",
+        gradient: "from-fuchsia-700/50 via-rose-900/40 to-stone-900",
+      },
+      {
+        title: "Reply-bait question",
+        blurb: "One question, one comment section.",
+        prompt:
+          "Make a 10-second vertical that opens with a question and ends on my product, tuned for comments.",
+        gradient: "from-violet-800/60 via-purple-900/40 to-stone-900",
+        pattern: "grid",
+      },
+    ],
+  },
+];
+
+export interface TemplateField {
+  id: string;
+  label: string;
+  placeholder: string;
+  optional: boolean;
+}
+
+/** The ~30s promo template fields (composer template card). */
+export const TEMPLATE_FIELDS: TemplateField[] = [
+  {
+    id: "productUrl",
+    label: "Product URL",
+    placeholder: "https://your-product-page.example",
+    optional: true,
+  },
+  {
+    id: "product",
+    label: "Product",
+    placeholder: "What you're selling, in a sentence",
+    optional: false,
+  },
+  {
+    id: "features",
+    label: "Key features",
+    placeholder: "The three points the video must hit",
+    optional: false,
+  },
+  {
+    id: "visuals",
+    label: "Visuals",
+    placeholder: "Look and feel — palette, motion, mood",
+    optional: false,
+  },
+  {
+    id: "brand",
+    label: "Brand",
+    placeholder: "Brand name, voice, and any assets (optional)",
+    optional: true,
+  },
+];
+
+export interface ConfirmPolicyOption {
+  value: "large_costs" | "always" | "never";
+  label: string;
+  hint: string;
+}
+
+export const CONFIRM_POLICIES: ConfirmPolicyOption[] = [
+  {
+    value: "large_costs",
+    label: "Ask before: Large costs",
+    hint: "Confirm only before expensive steps like renders",
+  },
+  {
+    value: "always",
+    label: "Always",
+    hint: "Confirm before every stage that spends credits",
+  },
+  {
+    value: "never",
+    label: "Never",
+    hint: "Run every stage without asking",
+  },
+];
+
+/** Editing guidance shown under the first plan turn in a project. */
+export const GUIDANCE: string[] = [
+  "Reply in plain words — a note like a warmer palette or a slower middle is a complete revision.",
+  "The agent waits for your explicit go before spending render credits.",
+  "Attach references any time: a link, a document, an image, audio, or footage.",
+  "If a delivery misses, use Mark to fix — it sends the video straight back to preview.",
+];
+
 /* ---------------------------------------------------------------- login -- */
 
 export const LOGIN = {
