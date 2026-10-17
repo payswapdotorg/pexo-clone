@@ -1,11 +1,18 @@
+# deps
 node_modules/
+
+# next
 .next/
 out/
-dist/
+build/
+next-env.d.ts
+
+# env & data
 .env
 .env.local
 *.db
 *.db-journal
-db/*.db*
+data/
 .DS_Store
 *.log
+tsconfig.tsbuildinfo
