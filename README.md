@@ -25,7 +25,7 @@ Download / Share / Mark-to-fix actions. A credit meter is consumed at each stage
 | Video agent page | `/video-agent` | Product explainer |
 | Skills page | `/skills` | Agent-skill / CLI connection story |
 | Pricing | `/pricing` | Free / Pro / Elite / Max tiers + credits FAQ |
-| Login | `/login` | Demo session (Google OAuth shape, no real Google dependency) |
+| Login | `/login` | Demo session (Google OAuth shape, no real Google dependency): every login issues a **per-visitor sandbox account** — own projects, own 100 credits |
 | Workspace | `/home` | Greeting, composer with template, attachments, quick starts, template gallery, recent projects |
 | Project room | `/project/[id]` | The agent conversation: plan → still preview → timeline → confirm gate → render → delivery + feedback |
 
@@ -96,6 +96,33 @@ consumes RENDER (6), sets status working, and produces a playable MP4.
 
 The UI live-updates through the events long-poll: agent turns, artifacts, project
 status, and the credit meter update without manual refresh.
+
+## Public-deployment hardening
+
+The demo is deployed on the public internet with real provider keys behind it, so
+the spend surface is guarded end-to-end:
+
+- **Per-visitor sandbox logins.** Every login (the Google mock or the demo button)
+  issues its own generated account (`demo-<hex>@demo.vidra.local`) — own projects,
+  own 100 credits, never a shared account. Returning visitors land back in their
+  own sandbox via a httpOnly hint cookie. Unused sandboxes (no projects, older
+  than a week) are pruned opportunistically.
+- **Rate limits** (DB-backed fixed windows — serverless instances share no memory,
+  so the Postgres row *is* the counter; `RateLimit` table, one atomic upsert per
+  request, standard `Retry-After` on 429s):
+
+  | Route | Key | Default limit | Env override |
+  | --- | --- | --- | --- |
+  | `POST /api/auth/login` | per network (IP) | 10 / 10 min | `LOGIN_RATE_LIMIT` |
+  | `POST /api/chat` | per user | 30 / 10 min | `CHAT_RATE_LIMIT` |
+  | `POST /api/uploads` | per user | 20 / 10 min | `UPLOAD_RATE_LIMIT` |
+
+- **Sessions fail closed.** `VIDRA_DEMO_SECRET` must be set in production; the
+  HMAC fallback in the repo is a public constant, so in production the app refuses
+  to sign or trust sessions made with it instead of silently accepting forgeable
+  cookies.
+- Uploads are already capped (≤ 8MB, type whitelist) and every project/message
+  route is owner-scoped by the session user.
 
 ## Recon method (REA evidence)
 

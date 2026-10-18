@@ -101,11 +101,25 @@ export function HeroComposer({
         startTransition(() => router.push("/login"));
         return;
       }
+      if (res.status === 429) {
+        const body = (await res.json().catch(() => ({}))) as {
+          message?: string;
+        };
+        toast("The agent needs a short breather", {
+          description:
+            body.message ??
+            "You're sending faster than the agent can think — try again in a moment.",
+        });
+        return;
+      }
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as {
           error?: string;
+          message?: string;
         };
-        throw new Error(body.error ?? `Request failed (${res.status})`);
+        throw new Error(
+          body.message ?? body.error ?? `Request failed (${res.status})`
+        );
       }
       const data = (await res.json()) as { projectId: string };
       startTransition(() => router.push(`/project/${data.projectId}`));

@@ -98,3 +98,11 @@ generation is unavailable in the runtime, fall back to a programmatic renderer
 5. Credits are real (Prisma-backed) and enforced server-side.
 6. Single `/` route is the app entry in the sandbox preview; marketing pages can be
    sections/modals of the app experience — do not create a multi-domain split.
+7. **Public-deployment hardening** (this clone runs on the open internet):
+   - Logins issue per-visitor sandbox accounts (own projects, own credits) —
+     never a shared account visitors could cross-contaminate.
+   - Rate limits are enforced server-side: login per network, chat and upload
+     per user (DB-backed fixed windows; 429s carry `Retry-After` and an honest
+     message the UI surfaces as a toast).
+   - Marketing/demo copy must never claim "local-only / nothing persisted"
+     when the demo persists to the real database and object storage.

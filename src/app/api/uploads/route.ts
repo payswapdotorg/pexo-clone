@@ -2,6 +2,7 @@ import path from "node:path";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { contentTypeFor, putArtifact } from "@/lib/storage";
+import { consumeRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 
 /**
  * POST /api/uploads — multipart upload (one file, ≤8MB) stored via the
@@ -29,6 +30,19 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "no_session", message: "Sign in to upload files." },
       { status: 401 }
+    );
+  }
+
+  // Spend guard: uploads land in real object storage — cap the per-user
+  // rate so scripted clients can't fill the bucket.
+  const uploadDecision = await consumeRateLimit("upload:user", user.id, {
+    env: "UPLOAD_RATE_LIMIT",
+    limit: 20,
+  });
+  if (!uploadDecision.ok) {
+    return rateLimitedResponse(
+      uploadDecision,
+      "That's a lot of uploads in a short time — give it a minute and try again."
     );
   }
 

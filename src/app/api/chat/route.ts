@@ -10,6 +10,7 @@ import { deleteProjectArtifacts } from "@/lib/storage";
 import { runAgentTurn } from "@/lib/agent/protocol";
 import { readAttachments } from "@/lib/agent/attachments";
 import { emitMessageCreated } from "@/lib/agent/events";
+import { consumeRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 
 /**
  * POST /api/chat — send a chat message for a project (PRODUCT-SPEC §4).
@@ -109,6 +110,21 @@ export async function POST(request: Request) {
        content, never a filename alone. Failures become honest notes and
        never fail the turn. */
     parsedAttachments = await readAttachments(parsed);
+  }
+
+  // Spend guard: every turn runs real LLM (and at render stages, real
+  // video-model) calls. Credits cap the total, but a scripted client
+  // could still burn provider budget fast within its balance — cap the
+  // per-user turn rate too.
+  const turnDecision = await consumeRateLimit("chat:user", user.id, {
+    env: "CHAT_RATE_LIMIT",
+    limit: 30,
+  });
+  if (!turnDecision.ok) {
+    return rateLimitedResponse(
+      turnDecision,
+      "You're sending messages faster than the agent can think — take a short breather and try again in a moment."
+    );
   }
 
   let project;

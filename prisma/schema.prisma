@@ -98,3 +98,14 @@ model ProjectEvent {
 
   @@index([projectId, id])
 }
+
+// Fixed-window rate-limit counters (public-deployment hardening pass).
+// Serverless instances can't share memory, so the Postgres row IS the
+// counter. Rows rotate in place (windowStart advances when a window
+// expires) and stale ones are pruned opportunistically by the login route.
+model RateLimit {
+  key         String   @id
+  count       Int      @default(0)
+  windowStart DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

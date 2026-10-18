@@ -11,8 +11,8 @@ import { db } from "@/lib/db";
  */
 export const SESSION_COOKIE = "vidra_session";
 
-const DEMO_SECRET =
-  process.env.VIDRA_DEMO_SECRET ?? "vidra-pc1-demo-secret-0x5f3a";
+const DEFAULT_SECRET = "vidra-pc1-demo-secret-0x5f3a";
+const SESSION_SECRET = process.env.VIDRA_DEMO_SECRET ?? DEFAULT_SECRET;
 
 export interface SessionPayload {
   userId: string;
@@ -21,8 +21,22 @@ export interface SessionPayload {
   issuedAt: number;
 }
 
+/**
+ * Fail closed: the default secret is a public constant in the repo — with
+ * it, anyone could forge session cookies for any userId. Production must
+ * set VIDRA_DEMO_SECRET; when it isn't set we refuse to sign (login fails
+ * loudly) instead of silently issuing forgeable cookies.
+ */
 function sign(payload: string): string {
-  return createHmac("sha256", DEMO_SECRET).update(payload).digest("base64url");
+  if (
+    process.env.NODE_ENV === "production" &&
+    SESSION_SECRET === DEFAULT_SECRET
+  ) {
+    throw new Error(
+      "VIDRA_DEMO_SECRET is not set — refusing to sign sessions with the public demo default."
+    );
+  }
+  return createHmac("sha256", SESSION_SECRET).update(payload).digest("base64url");
 }
 
 export function createSessionValue(
@@ -37,6 +51,13 @@ export function parseSessionValue(
   value: string | undefined
 ): SessionPayload | null {
   if (!value) return null;
+  // Fail closed: never trust cookies signed with the public demo default.
+  if (
+    process.env.NODE_ENV === "production" &&
+    SESSION_SECRET === DEFAULT_SECRET
+  ) {
+    return null;
+  }
   const [body, mac] = value.split(".");
   if (!body || !mac) return null;
   const expected = sign(body);
@@ -68,8 +89,3 @@ export async function getSession(): Promise<User | null> {
   const user = await db.user.findUnique({ where: { id: payload.userId } });
   return user ?? null;
 }
-
-export const DEMO_USER = Object.freeze({
-  name: "Ada Demo",
-  email: "ada@demo.vidra.local",
-});

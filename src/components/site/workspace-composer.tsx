@@ -226,6 +226,17 @@ export function WorkspaceComposer({
         );
         return;
       }
+      if (res.status === 429) {
+        const body = (await res.json().catch(() => ({}))) as {
+          message?: string;
+        };
+        toast("The agent needs a short breather", {
+          description:
+            body.message ??
+            "You're sending messages faster than it can think — try again in a moment.",
+        });
+        return;
+      }
       const data = (await res.json().catch(() => ({}))) as ChatSendResult & {
         message?: string;
       };

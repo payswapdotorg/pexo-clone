@@ -1010,7 +1010,8 @@ export const LOGIN = {
   googleCta: "Continue with Google",
   divider: "or",
   demoCta: "Try a demo session",
-  demoHint: "Demo sessions are local-only: same journey, nothing persisted to a real account.",
+  demoHint:
+    "Each demo session is an isolated sandbox — your own projects and 100 credits, no real Google account involved. Unused sandboxes are cleaned up after a week.",
   note: "By continuing you agree to the Terms of Service and acknowledge the Privacy Policy.",
 };
 

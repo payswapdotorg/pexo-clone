@@ -36,11 +36,19 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          mode === "google" ? {} : { name: "Ada Demo", email: "ada@demo.vidra.local" }
-        ),
+        // Both flows are honest mocks: the server issues a per-visitor
+        // sandbox identity (own projects, own credits) — never a shared
+        // account. Returning visitors land back in their own sandbox.
+        body: JSON.stringify({}),
       });
-      if (!res.ok) throw new Error(`Login failed (${res.status})`);
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as {
+          message?: string;
+        };
+        throw new Error(
+          data.message ?? `Login failed (${res.status})`
+        );
+      }
       startTransition(() => router.push("/home"));
     } catch (err) {
       setBusy(null);
