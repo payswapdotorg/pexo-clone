@@ -1,5 +1,17 @@
 import ZAI from "z-ai-web-dev-sdk";
 import { putArtifact } from "@/lib/storage";
+import { DEFAULT_ASPECT, imageSizeFor } from "./aspect";
+
+/* The sandbox SDK's size parameter is a literal union; our size table maps
+   onto it exactly (1024x1024 · 768x1344 · 864x1152 · 1344x768 · 1152x864 ·
+   1440x720 · 720x1440), so the cast only satisfies the compile-time shape. */
+type SdkImageSize = Parameters<
+  Awaited<ReturnType<typeof ZAI.create>>["images"]["generations"]["create"]
+>[0]["size"];
+
+function sdkImageSize(aspect: string): SdkImageSize {
+  return imageSizeFor(aspect).replace("*", "x") as SdkImageSize;
+}
 
 export interface StillResult {
   url: string;
@@ -66,7 +78,10 @@ async function pollTask(taskId: string, headers: Record<string, string>) {
   throw new Error("image generation timed out");
 }
 
-async function generateWithDashScope(prompt: string): Promise<Buffer> {
+async function generateWithDashScope(
+  prompt: string,
+  aspect: string
+): Promise<Buffer> {
   const headers = {
     Authorization: `Bearer ${process.env.DASHSCOPE_API_KEY as string}`,
     "Content-Type": "application/json",
@@ -79,7 +94,7 @@ async function generateWithDashScope(prompt: string): Promise<Buffer> {
       body: JSON.stringify({
         model: process.env.DASHSCOPE_IMAGE_MODEL ?? DEFAULT_IMAGE_MODEL,
         input: { prompt },
-        parameters: { size: "1344*768", n: 1 },
+        parameters: { size: imageSizeFor(aspect), n: 1 },
       }),
       signal: AbortSignal.timeout(30_000),
     }
@@ -107,12 +122,26 @@ async function generateWithDashScope(prompt: string): Promise<Buffer> {
   return bytes;
 }
 
-async function generateWithZai(prompt: string): Promise<Buffer> {
+async function generateWithZai(prompt: string, aspect: string): Promise<Buffer> {
   const zai = await ZAI.create();
-  const response = await zai.images.generations.create({
-    prompt,
-    size: "1344x768",
-  });
+  let response;
+  try {
+    response = await zai.images.generations.create({
+      prompt,
+      size: sdkImageSize(aspect),
+    });
+  } catch (err) {
+    /* The sandbox gateway accepts a narrower size set than DashScope —
+       fall back to the known-good default rather than failing the turn. */
+    console.warn(
+      "[image] sandbox size rejected, retrying with the default:",
+      err instanceof Error ? err.message : String(err)
+    );
+    response = await zai.images.generations.create({
+      prompt,
+      size: sdkImageSize(DEFAULT_ASPECT),
+    });
+  }
   const base64: unknown = response?.data?.[0]?.base64;
   if (typeof base64 !== "string" || !base64) {
     throw new Error("image generation returned no data");
@@ -120,13 +149,21 @@ async function generateWithZai(prompt: string): Promise<Buffer> {
   return Buffer.from(base64, "base64");
 }
 
+/**
+ * Generate one still frame for the STILL_PREVIEW stage.
+ *
+ * `aspect` is the ratio agreed in the conversation (agent plan default or a
+ * later user override); it selects the model size — the preview must show
+ * the actual framing the render will use.
+ */
 export async function generateStill(
   projectId: string,
-  prompt: string
+  prompt: string,
+  aspect: string = DEFAULT_ASPECT
 ): Promise<StillResult> {
   const bytes = process.env.DASHSCOPE_API_KEY
-    ? await generateWithDashScope(prompt)
-    : await generateWithZai(prompt);
+    ? await generateWithDashScope(prompt, aspect)
+    : await generateWithZai(prompt, aspect);
 
   /* Name the file after its actual format so the artifact route serves
      the right Content-Type (generators may emit JPEG for a .png contract). */

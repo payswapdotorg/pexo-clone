@@ -11,6 +11,7 @@ import { CREDITS, rollbackCredits, spendCredits } from "./credits";
 import { askLLM } from "./llm";
 import { generateStill } from "./image";
 import { renderVideo, type StillSource } from "./video";
+import { aspectFromText, DEFAULT_ASPECT } from "./aspect";
 import {
   emitArtifactCreated,
   emitCreditsUpdated,
@@ -109,11 +110,12 @@ Write your reply as markdown with EXACTLY this numbered shape:
 
 1. **What I'd make:** one concrete creative paragraph describing the specific video you would build for this brief — composition, motion, mood. Specific to THIS brief, never generic.
 2. **{N} decisions for you:** a numbered list of real forks the user must decide (write the actual number, typically 2-3). Focus on asset availability (for example a real logo file versus plain type, because you cannot design a logo yourself), template or format fit, and scope. Name the tradeoff in each item.
-3. **Defaults I'll use unless you change them:** a bullet list that ALWAYS includes exactly these four labels: Length, Aspect ratio, Palette, Sound — each with the value you would pick for this brief.
+3. **Defaults I'll use unless you change them:** a bullet list that ALWAYS includes exactly these four labels: Length, Aspect ratio, Palette, Sound — each with the value you would pick for this brief. The Aspect ratio value MUST be a plain ratio like "9:16", "16:9" or "1:1" followed by the short explanation, because the render engine reads it to pick the frame size.
 4. A short closing of direct questions: ask exactly what you need answered to proceed, and note that you will show a still frame of the look for approval before animating anything.
 
 Style rules:
 - Collaborative, specific, honest about limitations. If the brief asks for something you cannot do (design a logo, produce licensed music, guarantee brand colors), say so plainly and give the practical alternative (for example: send the file or the agent will set plain type).
+- Length honesty: the render engine produces ONE 5-second clip per render. If the brief asks for a different length, say so plainly in the Length default (for example "5 s per clip — engine limit") and offer the practical alternative (loop the clip, or plan multiple clips).
 - Never sycophantic: do not praise the brief. No emojis. No headings besides the numbered list. Keep the whole reply under 250 words.`;
 
 const STILL_SYSTEM = `You are the video agent of ${BRAND}. The user has answered your plan questions, or asked for changes to an earlier preview. This turn is the STILL PREVIEW stage: show one still frame of the look plus a second-by-second timeline, then wait for an explicit "go" before anything renders.
@@ -123,7 +125,7 @@ Your reply MUST begin with this marker line, with nothing before it:
 
 After the marker line, write the visible markdown reply:
 - One short sentence introducing the frame and what it locks in.
-- A bullet-list timeline covering the whole duration, each bullet EXACTLY in the format "X–Ys: what happens" (for example "0–1.2s: ...", "1.2–3s: ...", "3–4.6s: ...", "4.6–5s: ..."). No gaps; the final beat must set up a clean loop back to the first frame.
+- A bullet-list timeline covering the whole duration, each bullet EXACTLY in the format "X–Ys: what happens" (for example "0–1.2s: ...", "1.2–3s: ...", "3–4.6s: ...", "4.6–5s: ..."). The render engine produces ONE 5-second clip per render — the timeline MUST cover exactly 0–5s; if the user asked for a longer video, say plainly that the clip is 5 s and will be cut to loop (and how you would chain clips for a longer cut). No gaps; the final beat must set up a clean loop back to the first frame.
 - One honest limitations line: what this preview does not include or verify (sound, motion quality, and anything else true of this project).
 - A closing ask for an explicit "go" before rendering. Never suggest the render already started.
 
@@ -193,6 +195,26 @@ async function planExcerptFor(projectId: string): Promise<string> {
   });
   if (!plan) return "";
   return plan.markdown.replace(/\s+/g, " ").slice(0, 200);
+}
+
+/**
+ * The aspect ratio agreed for this project. The plan stage's "Aspect ratio"
+ * default and any later user override ("make it vertical", "9:16 please")
+ * are honored: the NEWEST explicit mention in the conversation wins, so a
+ * user override beats the plan default. Falls back to 16:9.
+ */
+async function agreedAspect(projectId: string): Promise<string> {
+  const mentions = await db.message.findMany({
+    where: { projectId },
+    orderBy: { createdAt: "desc" },
+    select: { markdown: true },
+    take: 20,
+  });
+  for (const message of mentions) {
+    const aspect = aspectFromText(message.markdown);
+    if (aspect) return aspect;
+  }
+  return DEFAULT_ASPECT;
 }
 
 /* ------------------------------------------------------------------ */
@@ -306,10 +328,11 @@ async function runStillPreview(
 
   const history = await buildHistory(project.id);
   const planExcerpt = await planExcerptFor(project.id);
+  const aspect = await agreedAspect(project.id);
   const raw = await askLLM(STILL_SYSTEM, stillUserInput(project, history));
   const { prompt, markdown } = extractStillPrompt(raw, project, planExcerpt);
 
-  const still = await generateStill(project.id, prompt);
+  const still = await generateStill(project.id, prompt, aspect);
 
   const spend = await spendCredits(user.id, project.id, "PREVIEW");
   if (!spend.ok) {
@@ -442,10 +465,11 @@ async function runRendering(
   });
   const motionPlan = (preview?.markdown ?? project.title).replace(/\s+/g, " ");
   const videoPrompt = `${project.title}. Animate the provided still frame into a 5-second seamless loop. Motion plan: ${motionPlan.slice(0, 500)}`;
+  const aspect = await agreedAspect(project.id);
 
   let video;
   try {
-    video = await renderVideo(project.id, videoPrompt, still);
+    video = await renderVideo(project.id, videoPrompt, still, aspect);
   } catch (err) {
     await rollbackCredits(spend.eventId ?? "");
     throw err;

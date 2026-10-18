@@ -60,7 +60,10 @@ INTAKE → PLAN_QUESTIONS → STILL_PREVIEW → CONFIRM_GATE → RENDERING → D
   shape (What I'd make / N decisions for you / Defaults: Length, Aspect ratio, Palette,
   Sound / closing direct questions).
 - STILL_PREVIEW consumes PREVIEW (11): one generated still + second-by-second timeline
-  (`X–Ys: …`) + limitations + an explicit "say go" ask.
+  (`X–Ys: …`) + limitations + an explicit "say go" ask. The still honors the aspect
+  ratio agreed in the conversation (plan default or a later user override; the newest
+  mention wins — 9:16, 1:1, 4:3 and the other wan sizes are supported), and the
+  timeline honestly covers the 5 seconds the engine renders per clip.
 - CONFIRM_GATE: only explicit affirmation ("go", "yes, render", "do it", …) advances;
   anything else is an edit → a fresh preview. Never auto-renders.
 - RENDERING checks the balance first (insufficient → upgrade-offer turn, zero spend),

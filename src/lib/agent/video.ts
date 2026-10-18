@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 import ZAI from "z-ai-web-dev-sdk";
 import { putArtifact } from "@/lib/storage";
+import { DEFAULT_ASPECT, ffmpegTargetFor, videoSdkSizeFor, videoSizeFor } from "./aspect";
 
 const execFileAsync = promisify(execFile);
 
@@ -89,7 +90,8 @@ interface DashScopeVideoTask {
 async function renderWithDashScope(
   projectId: string,
   prompt: string,
-  still: StillSource | null
+  still: StillSource | null,
+  aspect: string
 ): Promise<VideoResult> {
   const auth = `Bearer ${process.env.DASHSCOPE_API_KEY as string}`;
   const input: Record<string, unknown> = { prompt };
@@ -109,7 +111,7 @@ async function renderWithDashScope(
       body: JSON.stringify({
         model: process.env.DASHSCOPE_VIDEO_MODEL ?? DEFAULT_VIDEO_MODEL,
         input,
-        parameters: { size: "1280*720", duration: 5 },
+        parameters: { size: videoSizeFor(aspect), duration: 5 },
       }),
       signal: AbortSignal.timeout(30_000),
     }
@@ -156,7 +158,7 @@ async function renderWithDashScope(
         filename,
         durationSec: 5,
         method: "sdk",
-        resolution: ratio ? ratio.replace("*", "x") : "1280x720",
+        resolution: ratio ? ratio.replace("*", "x") : videoSizeFor(aspect).replace("*", "x"),
       };
     }
     if (status === "FAILED" || status === "CANCELED" || status === "UNKNOWN") {
@@ -175,7 +177,8 @@ async function renderWithDashScope(
 async function renderWithSdk(
   projectId: string,
   prompt: string,
-  still: StillSource | null
+  still: StillSource | null,
+  aspect: string
 ): Promise<VideoResult> {
   const zai = await ZAI.create();
   let image_url: string | undefined;
@@ -188,7 +191,7 @@ async function renderWithSdk(
     image_url,
     quality: "speed",
     with_audio: false,
-    size: "1344x768",
+    size: videoSdkSizeFor(aspect),
     fps: 30,
     duration: 5,
   });
@@ -224,7 +227,7 @@ async function renderWithSdk(
         filename,
         durationSec: 5,
         method: "sdk",
-        resolution: await probeResolutionBytes(bytes, "1344x768"),
+        resolution: await probeResolutionBytes(bytes, videoSdkSizeFor(aspect)),
       };
     }
     if (result?.task_status === "FAIL") {
@@ -236,15 +239,19 @@ async function renderWithSdk(
 
 async function renderWithFfmpeg(
   projectId: string,
-  still: StillSource
+  still: StillSource,
+  aspect: string
 ): Promise<VideoResult> {
   const stillPath = path.join(tmpdir(), `pexo-still-${Date.now()}`);
   await fs.writeFile(stillPath, still.bytes);
 
   const outPath = path.join(tmpdir(), `pexo-video-${Date.now()}.mp4`);
+  const target = ffmpegTargetFor(aspect);
+  const sizeFlag = `${target.width}x${target.height}`;
   const filters =
-    "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2," +
-    "zoompan=z='min(zoom+0.0008,1.08)':d=150:s=1280x720:fps=30,format=yuv420p";
+    `scale=${target.width}:${target.height}:force_original_aspect_ratio=decrease,` +
+    `pad=${target.width}:${target.height}:(ow-iw)/2:(oh-ih)/2,` +
+    `zoompan=z='min(zoom+0.0008,1.08)':d=150:s=${sizeFlag}:fps=30,format=yuv420p`;
 
   try {
     await execFileAsync(
@@ -283,7 +290,7 @@ async function renderWithFfmpeg(
       filename,
       durationSec: 5,
       method: "ffmpeg",
-      resolution: await probeResolutionBytes(bytes, "1280x720"),
+      resolution: await probeResolutionBytes(bytes, sizeFlag),
     };
   } finally {
     await fs.rm(stillPath, { force: true }).catch(() => undefined);
@@ -294,20 +301,23 @@ async function renderWithFfmpeg(
 /**
  * Render the final video (deploy pass): DashScope wan model on public
  * hosting; z-ai SDK with the honest ffmpeg programmatic fallback in the
- * sandbox. Throws only when the active paths fail (the caller rolls the
- * credit spend back).
+ * sandbox. `aspect` is the ratio agreed in the conversation — the render
+ * size is chosen from it (video model: 1280x720, 720x1280 or 960x960).
+ * Throws only when the active paths fail (the caller rolls the credit
+ * spend back).
  */
 export async function renderVideo(
   projectId: string,
   prompt: string,
-  still: StillSource | null
+  still: StillSource | null,
+  aspect: string = DEFAULT_ASPECT
 ): Promise<VideoResult> {
   if (process.env.DASHSCOPE_API_KEY) {
-    return renderWithDashScope(projectId, prompt, still);
+    return renderWithDashScope(projectId, prompt, still, aspect);
   }
 
   try {
-    return await renderWithSdk(projectId, prompt, still);
+    return await renderWithSdk(projectId, prompt, still, aspect);
   } catch (err) {
     console.error(
       "[video] sdk render failed, using the ffmpeg fallback:",
@@ -316,6 +326,6 @@ export async function renderVideo(
     if (!still) {
       throw new Error("video rendering failed and no still frame exists to fall back on");
     }
-    return renderWithFfmpeg(projectId, still);
+    return renderWithFfmpeg(projectId, still, aspect);
   }
 }
