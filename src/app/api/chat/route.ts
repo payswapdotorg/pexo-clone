@@ -1,5 +1,3 @@
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
@@ -8,6 +6,7 @@ import {
   deriveTitle,
   generateProjectId,
 } from "@/lib/projects";
+import { deleteProjectArtifacts } from "@/lib/storage";
 import { runAgentTurn } from "@/lib/agent/protocol";
 import { emitMessageCreated } from "@/lib/agent/events";
 
@@ -18,6 +17,10 @@ import { emitMessageCreated } from "@/lib/agent/events";
  * created this call is rolled back entirely if generation fails.
  */
 const CONFIRM_POLICIES = new Set(["large_costs", "always", "never"]);
+
+/* Video-model renders can take a couple of minutes on public hosting —
+   hold the function open for the whole agent turn (serverless maxDuration). */
+export const maxDuration = 300;
 
 export async function POST(request: Request) {
   const user = await getSession();
@@ -164,12 +167,7 @@ export async function POST(request: Request) {
       await db.message.deleteMany({ where: { projectId: project.id } });
       await db.creditEvent.deleteMany({ where: { projectId: project.id } });
       await db.project.delete({ where: { id: project.id } });
-      await fs
-        .rm(path.join(process.cwd(), "data", "artifacts", project.id), {
-          recursive: true,
-          force: true,
-        })
-        .catch(() => undefined);
+      await deleteProjectArtifacts(project.id);
     }
     return NextResponse.json(
       {

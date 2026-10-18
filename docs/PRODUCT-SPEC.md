@@ -78,8 +78,10 @@ Observed original: Next.js (App Router, Turbopack chunks), NextAuth (Google), zu
 lucide icons, contenteditable rich editor, HLS cover videos, 6 locales.
 
 Clone stack (required): **Next.js 16 App Router + TypeScript + Tailwind + shadcn/ui,
-Prisma (SQLite), lucide-react, zustand.** The agent brain and generation run
-server-side through the sandbox AI SDK (`z-ai-web-dev-sdk`): LLM for planning turns,
+Prisma (Postgres via `DATABASE_URL`; SQLite in the original WO), lucide-react, zustand.**
+The agent brain and generation run
+server-side through a provider chain (`z-ai-web-dev-sdk` in the sandbox;
+DashScope/OpenRouter + R2 storage for public hosting): LLM for planning turns,
 image generation for still previews, video/animated rendering for the final deliverable
 (any honest method that yields a playable MP4/WebM is acceptable; if real video
 generation is unavailable in the runtime, fall back to a programmatic renderer

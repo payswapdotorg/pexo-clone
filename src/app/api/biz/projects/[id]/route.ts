@@ -1,8 +1,7 @@
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { deleteProjectArtifacts } from "@/lib/storage";
 
 /**
  * GET /api/biz/projects/[id] — full project detail for the project page
@@ -191,12 +190,7 @@ export async function DELETE(
     db.project.delete({ where: { id: project.id } }),
   ]);
 
-  await fs
-    .rm(path.join(process.cwd(), "data", "artifacts", project.id), {
-      recursive: true,
-      force: true,
-    })
-    .catch(() => undefined);
+  await deleteProjectArtifacts(project.id);
 
   return NextResponse.json({ ok: true, deleted: project.id });
 }

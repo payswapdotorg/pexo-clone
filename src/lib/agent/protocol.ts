@@ -1,12 +1,16 @@
-import { promises as fs } from "node:fs";
 import type { Artifact, Project, User } from "@prisma/client";
 import { db } from "@/lib/db";
-import { appendMessage, artifactAbsPath } from "@/lib/projects";
+import { appendMessage } from "@/lib/projects";
+import {
+  artifactKeyForUrl,
+  deleteArtifact,
+  getArtifact,
+} from "@/lib/storage";
 import { BRAND } from "@/lib/brand";
 import { CREDITS, rollbackCredits, spendCredits } from "./credits";
 import { askLLM } from "./llm";
 import { generateStill } from "./image";
-import { renderVideo } from "./video";
+import { renderVideo, type StillSource } from "./video";
 import {
   emitArtifactCreated,
   emitCreditsUpdated,
@@ -309,7 +313,7 @@ async function runStillPreview(
 
   const spend = await spendCredits(user.id, project.id, "PREVIEW");
   if (!spend.ok) {
-    await fs.rm(still.absPath, { force: true }).catch(() => undefined);
+    await deleteArtifact(still.url);
     return blockedTurn(
       user,
       project,
@@ -356,7 +360,7 @@ async function runStillPreview(
       status: project.status,
     };
   } catch (err) {
-    await fs.rm(still.absPath, { force: true }).catch(() => undefined);
+    await deleteArtifact(still.url);
     await rollbackCredits(spend.eventId ?? "");
     throw err;
   }
@@ -420,7 +424,16 @@ async function runRendering(
     orderBy: { createdAt: "desc" },
     take: 1,
   });
-  const stillAbsPath = latestStill ? artifactAbsPath(latestStill.url) : null;
+  let still: StillSource | null = null;
+  if (latestStill) {
+    const key = artifactKeyForUrl(latestStill.url);
+    if (key) {
+      const fetched = await getArtifact(key);
+      if (fetched.ok && fetched.bytes && fetched.contentType) {
+        still = { contentType: fetched.contentType, bytes: fetched.bytes };
+      }
+    }
+  }
 
   const [preview] = await db.message.findMany({
     where: { projectId: project.id, stage: STAGES.STILL_PREVIEW },
@@ -432,7 +445,7 @@ async function runRendering(
 
   let video;
   try {
-    video = await renderVideo(project.id, videoPrompt, stillAbsPath);
+    video = await renderVideo(project.id, videoPrompt, still);
   } catch (err) {
     await rollbackCredits(spend.eventId ?? "");
     throw err;
@@ -477,9 +490,7 @@ async function runRendering(
       status: "ready",
     };
   } catch (err) {
-    await fs.rm(`${process.cwd()}/data/artifacts/${project.id}/${video.filename}`, {
-      force: true,
-    }).catch(() => undefined);
+    await deleteArtifact(video.url);
     await rollbackCredits(spend.eventId ?? "");
     throw err;
   }

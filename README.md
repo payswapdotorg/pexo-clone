@@ -37,14 +37,18 @@ approved still).
 ## Architecture
 
 **Stack**: Next.js 16 (App Router) · TypeScript (strict) · Tailwind + shadcn/ui ·
-Prisma + SQLite · zustand · z-ai-web-dev-sdk (server-side only) · ffmpeg fallback.
+Prisma + Postgres · zustand · provider-chained AI (z-ai-web-dev-sdk sandbox /
+DashScope / OpenRouter, server-side only) · Cloudflare R2 or local-disk
+artifact storage · ffmpeg fallback (sandbox only).
 
 **Data model** (`prisma/schema.prisma`): `User` (credits 100, plan) · `Project`
 (status working|ready, confirmPolicy) · `Message` (role user|agent, markdown, stage,
 attachments JSON) · `Artifact` (kind still|video, url, filename, durationSec) ·
 `Feedback` (rating good|okay|bad) · `CreditEvent` (ledger) · `ProjectEvent`
-(long-poll event stream). Artifacts live under gitignored `data/artifacts/`, served by
-`/api/artifacts/*` with HTTP Range support.
+(long-poll event stream). Artifacts are stored through a storage abstraction
+(`src/lib/storage.ts`) — Cloudflare R2 (S3-compatible) when `R2_*` env vars are
+set, local `data/artifacts/` otherwise — and served by `/api/artifacts/*` with
+HTTP Range support either way.
 
 **Agent stage machine** (`src/lib/agent/protocol.ts`, per `docs/AGENT-PROTOCOL.md`):
 
@@ -75,7 +79,7 @@ consumes RENDER (6), sets status working, and produces a playable MP4.
 | `GET/PATCH/DELETE /api/biz/projects/[id]` | Project detail (messages + artifacts + feedback) · rename · delete |
 | `POST /api/biz/projects/[id]/feedback` | Satisfaction rating (good/okay/bad) |
 | `GET /api/biz/web-push/events?after_event_id=&project_id=` | Long-poll event stream (message/artifact/status/credits) |
-| `GET /api/artifacts/[...path]` | Stills + videos from `data/artifacts/` (Range requests, traversal-safe) |
+| `GET /api/artifacts/[...path]` | Stills + videos from storage (R2 or disk; Range requests, traversal-safe) |
 | `POST /api/uploads` | Attachment uploads (≤ 8MB: pdf/image/video/audio) |
 | `POST /api/auth/login` · `POST /api/auth/logout` · `GET /api/auth/session` | Demo session (signed httpOnly cookie; Google button is a mock) |
 | `POST /api/user/upgrade` · `GET /api/user/credits` | Plan flip (demo) + credit balance |
@@ -97,13 +101,37 @@ status, and the credit meter update without manual refresh.
 
 ```bash
 bun install
-bun run db:push   # Prisma + SQLite (creates db/pexo.db)
-bun run dev       # http://localhost:3000
+cp .env.example .env   # set DATABASE_URL (any Postgres; Neon works great)
+bun run db:push        # Prisma + Postgres
+bun run dev            # http://localhost:3000
 ```
 
 No seeding is needed — the first login creates the demo user (100 credits).
 Set `VIDRA_DEMO_SECRET` to override the session-signing default.
-Verified from a fresh clone: install → db:push → dev → `/` renders.
+
+**AI providers** (`src/lib/agent/llm.ts`): with no provider keys set, the agent
+uses the sandbox `z-ai-web-dev-sdk` gateway (local/sandbox only). Set
+`DASHSCOPE_API_KEY` (Alibaba Model Studio international) to run anywhere with
+`qwen-plus` (LLM), `wan2.2-t2i-flash` (stills) and `wan2.1-t2v-turbo` (video);
+optionally `OPENROUTER_API_KEY` (+ `LLM_MODEL`) as the first-choice LLM with
+automatic fall-through. See `.env.example` for every knob.
+
+**Artifact storage**: set `R2_BUCKET` + `R2_ACCESS_KEY_ID` + `R2_SECRET_ACCESS_KEY`
++ `R2_ENDPOINT` to store stills/videos/uploads in Cloudflare R2 instead of local
+disk (required on serverless hosting).
+
+## Deploy (Vercel + Neon + R2)
+
+The production deployment runs on Vercel with Neon Postgres and Cloudflare R2:
+
+1. Create a Neon project, put the connection string in `DATABASE_URL`
+   (pooled endpoint with `pgbouncer=true&connection_limit=1` for serverless).
+2. Create an R2 bucket + S3 API token, set the four `R2_*` variables.
+3. Set `DASHSCOPE_API_KEY` (and optionally the model overrides).
+4. `vercel deploy --prod` — `package.json` build runs `prisma generate && next build`.
+
+`/api/chat` exports `maxDuration = 300` because the wan video model takes
+~2–3 minutes per 5-second render.
 
 ## License
 

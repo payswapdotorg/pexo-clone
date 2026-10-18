@@ -1,8 +1,9 @@
-// PC2 data layer — SQLite via Prisma (PRODUCT-SPEC §5, AGENT-PROTOCOL credit
-// contract). DB file lands at db/pexo.db (gitignored via *.db).
+// Data layer — Prisma over Postgres (PRODUCT-SPEC §5, AGENT-PROTOCOL credit
+// contract). Deploy pass: provider switched to postgresql with the connection
+// string from DATABASE_URL (Neon in production; any Postgres locally).
 datasource db {
-  provider = "sqlite"
-  url      = "file:../db/pexo.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {

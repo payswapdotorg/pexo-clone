@@ -10,6 +10,9 @@ import { getSession } from "@/lib/session";
  */
 export const dynamic = "force-dynamic";
 
+/* The long-poll loop runs up to 25s — stay inside every serverless plan. */
+export const maxDuration = 60;
+
 const POLL_MS = 1_000;
 const TIMEOUT_MS = 25_000;
 

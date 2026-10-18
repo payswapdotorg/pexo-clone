@@ -1,8 +1,10 @@
 import { execFile } from "node:child_process";
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 import ZAI from "z-ai-web-dev-sdk";
+import { putArtifact } from "@/lib/storage";
 
 const execFileAsync = promisify(execFile);
 
@@ -14,28 +16,37 @@ export interface VideoResult {
   resolution: string;
 }
 
-const POLL_INTERVAL_MS = 5_000;
-const MAX_POLLS = 48; // ~4 minutes before the ffmpeg fallback kicks in
+/** The still frame handed to the render stage (bytes + real MIME type). */
+export interface StillSource {
+  contentType: string;
+  bytes: Buffer;
+}
+
+const DEFAULT_DASHSCOPE_BASE = "https://dashscope-intl.aliyuncs.com";
+const DEFAULT_VIDEO_MODEL = "wan2.1-t2v-turbo";
+
+const SDK_POLL_INTERVAL_MS = 5_000;
+const SDK_MAX_POLLS = 48; // ~4 minutes before the ffmpeg fallback kicks in
+const DASH_POLL_INTERVAL_MS = 5_000;
+const DASH_MAX_POLLS = 48; // ~4 minutes (wan turbo renders land ~2 min)
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function saveVideo(
-  projectId: string,
-  bytes: Buffer
-): Promise<{ url: string; filename: string; absPath: string }> {
-  const dir = path.join(process.cwd(), "data", "artifacts", projectId);
-  await fs.mkdir(dir, { recursive: true });
-  const filename = `video-${Date.now()}.mp4`;
-  const absPath = path.join(dir, filename);
-  await fs.writeFile(absPath, bytes);
-  return { url: `/api/artifacts/${projectId}/${filename}`, filename, absPath };
+function dashscopeBase(): string {
+  return (
+    process.env.DASHSCOPE_BASE_URL?.replace(/\/$/, "") ?? DEFAULT_DASHSCOPE_BASE
+  );
 }
 
-async function probeResolution(
-  absPath: string,
+async function probeResolutionBytes(
+  bytes: Buffer,
   fallback: string
 ): Promise<string> {
+  /* ffprobe is optional (absent on serverless) — the nominal resolution is
+     the honest fallback. */
+  const probePath = path.join(tmpdir(), `pexo-probe-${Date.now()}.mp4`);
   try {
+    await fs.writeFile(probePath, bytes);
     const { stdout } = await execFileAsync(
       "/usr/bin/ffprobe",
       [
@@ -47,31 +58,129 @@ async function probeResolution(
         "stream=width,height",
         "-of",
         "csv=p=0",
-        absPath,
+        probePath,
       ],
       { timeout: 20_000 }
     );
     const [width, height] = stdout.trim().split(",");
     if (width && height) return `${width}x${height}`;
   } catch {
-    /* keep the nominal resolution — probed value is a nice-to-have */
+    /* keep the nominal resolution */
+  } finally {
+    await fs.rm(probePath, { force: true }).catch(() => undefined);
   }
   return fallback;
 }
 
+/* ------------------------------------------------------------------ */
+/* DashScope (public hosting) — wan video synthesis, async task          */
+/* ------------------------------------------------------------------ */
+
+interface DashScopeVideoTask {
+  output?: {
+    task_id?: string;
+    task_status?: string;
+    message?: string;
+    video_url?: string;
+    usage?: { video_ratio?: string; video_duration?: number };
+  };
+}
+
+async function renderWithDashScope(
+  projectId: string,
+  prompt: string,
+  still: StillSource | null
+): Promise<VideoResult> {
+  const auth = `Bearer ${process.env.DASHSCOPE_API_KEY as string}`;
+  const input: Record<string, unknown> = { prompt };
+  if (still) {
+    input.img_url = `data:${still.contentType};base64,${still.bytes.toString("base64")}`;
+  }
+
+  const create = await fetch(
+    `${dashscopeBase()}/api/v1/services/aigc/video-generation/video-synthesis`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: auth,
+        "Content-Type": "application/json",
+        "X-DashScope-Async": "enable",
+      },
+      body: JSON.stringify({
+        model: process.env.DASHSCOPE_VIDEO_MODEL ?? DEFAULT_VIDEO_MODEL,
+        input,
+        parameters: { size: "1280*720", duration: 5 },
+      }),
+      signal: AbortSignal.timeout(30_000),
+    }
+  );
+  const created = (await create.json().catch(() => null)) as DashScopeVideoTask | null;
+  const taskId = created?.output?.task_id;
+  if (!create.ok || !taskId) {
+    const message =
+      (created as unknown as { message?: string })?.message ??
+      `HTTP ${create.status}`;
+    throw new Error(`dashscope video: ${message}`);
+  }
+
+  for (let poll = 0; poll < DASH_MAX_POLLS; poll += 1) {
+    await sleep(DASH_POLL_INTERVAL_MS);
+    const res = await fetch(`${dashscopeBase()}/api/v1/tasks/${taskId}`, {
+      headers: { Authorization: auth },
+      signal: AbortSignal.timeout(30_000),
+    });
+    const task = (await res.json().catch(() => null)) as DashScopeVideoTask | null;
+    const status = task?.output?.task_status;
+    if (status === "SUCCEEDED") {
+      const remoteUrl = task?.output?.video_url;
+      if (typeof remoteUrl !== "string" || !remoteUrl) {
+        throw new Error("video task succeeded but returned no url");
+      }
+      const download = await fetch(remoteUrl, {
+        signal: AbortSignal.timeout(120_000),
+      });
+      if (!download.ok) {
+        throw new Error(`could not download the rendered video (${download.status})`);
+      }
+      const bytes = Buffer.from(await download.arrayBuffer());
+      if (bytes.length === 0) {
+        throw new Error("rendered video was empty");
+      }
+      const filename = `video-${Date.now()}.mp4`;
+      await putArtifact(`${projectId}/${filename}`, bytes, {
+        contentType: "video/mp4",
+      });
+      const ratio = task?.output?.usage?.video_ratio;
+      return {
+        url: `/api/artifacts/${projectId}/${filename}`,
+        filename,
+        durationSec: 5,
+        method: "sdk",
+        resolution: ratio ? ratio.replace("*", "x") : "1280x720",
+      };
+    }
+    if (status === "FAILED" || status === "CANCELED" || status === "UNKNOWN") {
+      throw new Error(
+        `video task ${status}: ${task?.output?.message ?? "no detail"}`
+      );
+    }
+  }
+  throw new Error("video generation timed out");
+}
+
+/* ------------------------------------------------------------------ */
+/* z-ai sandbox SDK + ffmpeg fallback (local/sandbox mode)              */
+/* ------------------------------------------------------------------ */
+
 async function renderWithSdk(
   projectId: string,
   prompt: string,
-  stillAbsPath: string | null
+  still: StillSource | null
 ): Promise<VideoResult> {
   const zai = await ZAI.create();
   let image_url: string | undefined;
-  if (stillAbsPath) {
-    const still = await fs.readFile(stillAbsPath);
-    /* Match the data-URI MIME to the actual bytes (SDK stills can be JPEG). */
-    const isJpeg =
-      still.length > 3 && still[0] === 0xff && still[1] === 0xd8 && still[2] === 0xff;
-    image_url = `data:${isJpeg ? "image/jpeg" : "image/png"};base64,${still.toString("base64")}`;
+  if (still) {
+    image_url = `data:${still.contentType};base64,${still.bytes.toString("base64")}`;
   }
 
   const task = await zai.video.generations.create({
@@ -88,15 +197,17 @@ async function renderWithSdk(
     throw new Error("video generation returned no task id");
   }
 
-  for (let poll = 0; poll < MAX_POLLS; poll += 1) {
-    await sleep(POLL_INTERVAL_MS);
+  for (let poll = 0; poll < SDK_MAX_POLLS; poll += 1) {
+    await sleep(SDK_POLL_INTERVAL_MS);
     const result = await zai.async.result.query(taskId);
     if (result?.task_status === "SUCCESS") {
       const remoteUrl: unknown = result?.video_result?.[0]?.url;
       if (typeof remoteUrl !== "string" || !remoteUrl) {
         throw new Error("video task succeeded but returned no url");
       }
-      const response = await fetch(remoteUrl);
+      const response = await fetch(remoteUrl, {
+        signal: AbortSignal.timeout(120_000),
+      });
       if (!response.ok) {
         throw new Error(`could not download the rendered video (${response.status})`);
       }
@@ -104,13 +215,16 @@ async function renderWithSdk(
       if (bytes.length === 0) {
         throw new Error("rendered video was empty");
       }
-      const saved = await saveVideo(projectId, bytes);
+      const filename = `video-${Date.now()}.mp4`;
+      await putArtifact(`${projectId}/${filename}`, bytes, {
+        contentType: "video/mp4",
+      });
       return {
-        url: saved.url,
-        filename: saved.filename,
+        url: `/api/artifacts/${projectId}/${filename}`,
+        filename,
         durationSec: 5,
         method: "sdk",
-        resolution: await probeResolution(saved.absPath, "1344x768"),
+        resolution: await probeResolutionBytes(bytes, "1344x768"),
       };
     }
     if (result?.task_status === "FAIL") {
@@ -122,74 +236,86 @@ async function renderWithSdk(
 
 async function renderWithFfmpeg(
   projectId: string,
-  stillAbsPath: string
+  still: StillSource
 ): Promise<VideoResult> {
-  const dir = path.join(process.cwd(), "data", "artifacts", projectId);
-  await fs.mkdir(dir, { recursive: true });
-  const filename = `video-${Date.now()}.mp4`;
-  const absPath = path.join(dir, filename);
+  const stillPath = path.join(tmpdir(), `pexo-still-${Date.now()}`);
+  await fs.writeFile(stillPath, still.bytes);
 
+  const outPath = path.join(tmpdir(), `pexo-video-${Date.now()}.mp4`);
   const filters =
     "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2," +
     "zoompan=z='min(zoom+0.0008,1.08)':d=150:s=1280x720:fps=30,format=yuv420p";
 
-  await execFileAsync(
-    "/usr/bin/ffmpeg",
-    [
-      "-loop",
-      "1",
-      "-i",
-      stillAbsPath,
-      "-t",
-      "5",
-      "-vf",
-      filters,
-      "-c:v",
-      "libx264",
-      "-preset",
-      "fast",
-      "-movflags",
-      "+faststart",
-      "-y",
-      absPath,
-    ],
-    { timeout: 120_000 }
-  );
+  try {
+    await execFileAsync(
+      "/usr/bin/ffmpeg",
+      [
+        "-loop",
+        "1",
+        "-i",
+        stillPath,
+        "-t",
+        "5",
+        "-vf",
+        filters,
+        "-c:v",
+        "libx264",
+        "-preset",
+        "fast",
+        "-movflags",
+        "+faststart",
+        "-y",
+        outPath,
+      ],
+      { timeout: 120_000 }
+    );
 
-  const stat = await fs.stat(absPath);
-  if (stat.size === 0) {
-    throw new Error("ffmpeg produced an empty file");
+    const bytes = await fs.readFile(outPath);
+    if (bytes.length === 0) {
+      throw new Error("ffmpeg produced an empty file");
+    }
+    const filename = `video-${Date.now()}.mp4`;
+    await putArtifact(`${projectId}/${filename}`, bytes, {
+      contentType: "video/mp4",
+    });
+    return {
+      url: `/api/artifacts/${projectId}/${filename}`,
+      filename,
+      durationSec: 5,
+      method: "ffmpeg",
+      resolution: await probeResolutionBytes(bytes, "1280x720"),
+    };
+  } finally {
+    await fs.rm(stillPath, { force: true }).catch(() => undefined);
+    await fs.rm(outPath, { force: true }).catch(() => undefined);
   }
-
-  return {
-    url: `/api/artifacts/${projectId}/${filename}`,
-    filename,
-    durationSec: 5,
-    method: "ffmpeg",
-    resolution: await probeResolution(absPath, "1280x720"),
-  };
 }
 
 /**
- * Render the final video: SDK video generation first (polling the async
- * task), ffmpeg programmatic renderer from the still as an honest fallback.
- * Throws only when both paths fail.
+ * Render the final video (deploy pass): DashScope wan model on public
+ * hosting; z-ai SDK with the honest ffmpeg programmatic fallback in the
+ * sandbox. Throws only when the active paths fail (the caller rolls the
+ * credit spend back).
  */
 export async function renderVideo(
   projectId: string,
   prompt: string,
-  stillAbsPath: string | null
+  still: StillSource | null
 ): Promise<VideoResult> {
+  if (process.env.DASHSCOPE_API_KEY) {
+    return renderWithDashScope(projectId, prompt, still);
+  }
+
   try {
-    return await renderWithSdk(projectId, prompt, stillAbsPath);
+    return await renderWithSdk(projectId, prompt, still);
   } catch (err) {
     console.error(
       "[video] sdk render failed, using the ffmpeg fallback:",
       err instanceof Error ? err.message : String(err)
     );
-    if (!stillAbsPath) {
+    if (!still) {
       throw new Error("video rendering failed and no still frame exists to fall back on");
     }
-    return renderWithFfmpeg(projectId, stillAbsPath);
+    return renderWithFfmpeg(projectId, still);
   }
 }

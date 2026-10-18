@@ -2,9 +2,9 @@ import { db } from "@/lib/db";
 import type { Message, Prisma } from "@prisma/client";
 
 /**
- * Shared project helpers (PC2): title derivation kept from PC1, URL-shaped
+ * Shared project helpers: title derivation kept from PC1, URL-shaped
  * project id allocation, and message appends with strictly monotonic
- * timestamps so conversation order is always well-defined in SQLite.
+ * timestamps so conversation order is always well-defined.
  */
 
 export function deriveTitle(message: string): string {
@@ -37,7 +37,7 @@ export interface AppendMessageInput {
 
 /**
  * Append a message, guaranteeing createdAt is strictly greater than the
- * project's current last message (SQLite ms precision + same-turn writes).
+ * project's current last message (ms precision + same-turn writes).
  * Also bumps the project's updatedAt so recent-projects sorts by activity.
  */
 export async function appendMessage(
@@ -51,7 +51,6 @@ export async function appendMessage(
   });
   const lastMs = last ? last.createdAt.getTime() : 0;
   const createdAt = new Date(Math.max(Date.now(), lastMs + 1));
-
   const message = await db.message.create({
     data: {
       projectId,
@@ -69,17 +68,4 @@ export async function appendMessage(
     data: { updatedAt: new Date() },
   });
   return message;
-}
-
-/** Absolute path of an artifact file from its /api/artifacts/... URL. */
-export function artifactAbsPath(url: string): string | null {
-  const prefix = "/api/artifacts/";
-  if (!url.startsWith(prefix)) return null;
-  const rel = url.slice(prefix.length);
-  const segments = rel.split("/");
-  const safe = segments.every(
-    (segment) => /^[A-Za-z0-9._-]+$/.test(segment) && !segment.includes("..")
-  );
-  if (!safe || segments.length === 0) return null;
-  return `${process.cwd()}/data/artifacts/${segments.join("/")}`;
 }

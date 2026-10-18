@@ -1,11 +1,12 @@
-import { promises as fs } from "node:fs";
 import path from "node:path";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
+import { contentTypeFor, putArtifact } from "@/lib/storage";
 
 /**
- * POST /api/uploads — multipart upload (one file, ≤8MB) saved under
- * data/artifacts/uploads/ and served back through /api/artifacts/.
+ * POST /api/uploads — multipart upload (one file, ≤8MB) stored via the
+ * storage layer (R2 or local disk, see src/lib/storage.ts) and served back
+ * through /api/artifacts/.
  */
 const MAX_BYTES = 8 * 1024 * 1024;
 
@@ -77,12 +78,9 @@ export async function POST(request: Request) {
     .slice(-80) || "file";
   const savedName = `upload-${Date.now()}-${sanitized}`;
 
-  const dir = path.join(process.cwd(), "data", "artifacts", "uploads");
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(
-    path.join(dir, savedName),
-    Buffer.from(await file.arrayBuffer())
-  );
+  await putArtifact(`uploads/${savedName}`, Buffer.from(await file.arrayBuffer()), {
+    contentType: contentTypeFor(savedName),
+  });
 
   return NextResponse.json({
     url: `/api/artifacts/uploads/${savedName}`,
