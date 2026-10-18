@@ -213,6 +213,30 @@ function MessageItem({
               ))}
             </ul>
           )}
+          {attachments.some((a) => a.digest) && (
+            <details className="mt-2 rounded-lg border border-border/60 bg-background/40 px-2.5 py-1.5">
+              <summary className="cursor-pointer list-none text-[11px] font-medium text-primary/90 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                What I read from your attachments
+              </summary>
+              <ul className="mt-1.5 space-y-1.5">
+                {attachments
+                  .filter((a) => a.digest)
+                  .map((attachment, i) => (
+                    <li
+                      key={`digest-${attachment.kind}-${i}`}
+                      className="text-[11px] leading-relaxed text-muted-foreground"
+                    >
+                      <span className="font-medium uppercase text-foreground/70">
+                        {attachment.kind}:
+                      </span>{" "}
+                      {attachment.digest!.length > 220
+                        ? `${attachment.digest!.slice(0, 220)}…`
+                        : attachment.digest}
+                    </li>
+                  ))}
+              </ul>
+            </details>
+          )}
         </div>
       ) : (
         <div className="mt-1.5">

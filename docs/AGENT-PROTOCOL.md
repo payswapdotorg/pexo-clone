@@ -17,6 +17,16 @@ STILL_PREVIEW (or PLAN_QUESTIONS if scope changes), and `ANSWER` (advances the s
 ### S0 INTAKE (on first prompt of a project)
 - Create project (id, title derived from the prompt), consume PROJECT_START credits.
 - Select/attach the template card if the composer carried one.
+- **Attachments pass**: URL / PDF / image attachments are actually READ here —
+  images through a vision model (provider-chained like the LLM: OpenRouter ->
+  DashScope qwen-vl -> sandbox z-ai SDK), PDFs and web pages through
+  dependency-free text extraction (FlateDecode + Tj/TJ operators; SSRF-guarded
+  fetch). Each attachment resolves to a `read: ...` digest the plan LLM treats
+  as ground truth. Unreadable material resolves to an honest
+  `could not read: ...` note the plan must surface — never a silent
+  filename-only read. Video/audio are kept as reference with an honest note.
+  Digests persist on the message and flow into every later stage (the still
+  prompt and render plans see them).
 
 ### S1 PLAN_QUESTIONS (LLM turn, temperature low)
 Output markdown with EXACTLY this shape:

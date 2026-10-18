@@ -15,6 +15,8 @@ export interface ChatArtifact {
 export interface ChatAttachment {
   kind: string;
   value: string;
+  /** Machine-extracted content the agent read from this attachment. */
+  digest?: string;
 }
 
 export interface ChatMessage {

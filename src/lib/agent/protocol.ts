@@ -58,6 +58,8 @@ export interface TurnResult {
 interface UserAttachment {
   kind: string;
   value: string;
+  /** Machine-extracted content from the attachments pass (may be an honest failure note). */
+  digest?: string;
 }
 
 /** CONFIRM_GATE: only an explicit affirmation advances to RENDERING. */
@@ -78,13 +80,35 @@ async function lastAgentStage(projectId: string): Promise<string | null> {
   return last?.stage ?? null;
 }
 
+/** Attachment rows (Prisma JSON) that actually carry a read digest. */
+function digestedRows(
+  raw: unknown
+): { kind: string; value: string; digest: string }[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (a): a is { kind: string; value: string; digest: string } =>
+      a !== null &&
+      typeof a === "object" &&
+      typeof (a as { kind?: unknown }).kind === "string" &&
+      typeof (a as { value?: unknown }).value === "string" &&
+      typeof (a as { digest?: unknown }).digest === "string" &&
+      (a as { digest: unknown }).digest !== ""
+  );
+}
+
 async function buildHistory(projectId: string): Promise<string> {
   const messages = await db.message.findMany({
     where: { projectId },
     orderBy: { createdAt: "asc" },
   });
   return messages
-    .map((m) => `${m.role === "user" ? "User" : "Agent"}: ${m.markdown}`)
+    .map((m) => {
+      let line = `${m.role === "user" ? "User" : "Agent"}: ${m.markdown}`;
+      for (const a of digestedRows(m.attachments as unknown)) {
+        line += `\n  [attachment ${a.kind} ${a.value} — ${a.digest}]`;
+      }
+      return line;
+    })
     .join("\n\n");
 }
 
@@ -116,7 +140,8 @@ Write your reply as markdown with EXACTLY this numbered shape:
 Style rules:
 - Collaborative, specific, honest about limitations. If the brief asks for something you cannot do (design a logo, produce licensed music, guarantee brand colors), say so plainly and give the practical alternative (for example: send the file or the agent will set plain type).
 - Length honesty: the render engine produces ONE 5-second clip per render. If the brief asks for a different length, say so plainly in the Length default (for example "5 s per clip — engine limit") and offer the practical alternative (loop the clip, or plan multiple clips).
-- Never sycophantic: do not praise the brief. No emojis. No headings besides the numbered list. Keep the whole reply under 250 words.`;
+- Never sycophantic: do not praise the brief. No emojis. No headings besides the numbered list. Keep the whole reply under 250 words.
+- Attachments: the brief may list attachments. Lines starting with "read:" under an attachment are machine-extracted from the user's actual file or page — treat them as ground truth for what the user supplied (visible text, image contents, page content). Digests starting with "could not read" mean exactly that: say so plainly in your decisions or questions and ask for the key points as text. Never claim to replicate an exact asset from a description: if the user attached a logo or image, say you will approximate its look in the still frame (or use plain type), not duplicate the file.`;
 
 const STILL_SYSTEM = `You are the video agent of ${BRAND}. The user has answered your plan questions, or asked for changes to an earlier preview. This turn is the STILL PREVIEW stage: show one still frame of the look plus a second-by-second timeline, then wait for an explicit "go" before anything renders.
 
@@ -130,6 +155,8 @@ After the marker line, write the visible markdown reply:
 - A closing ask for an explicit "go" before rendering. Never suggest the render already started.
 
 If the user asked for changes to an earlier preview, fold their changes into the updated frame and timeline.
+
+Attachment notes in the conversation that start with "read:" are machine-extracted from the user's actual files or pages — fold them into the frame prompt and timeline as ground truth.
 
 Style rules: collaborative, specific, honest; never sycophantic; no emojis; under 200 words after the marker.`;
 
@@ -146,8 +173,14 @@ function planUserInput(
     userMessage,
   ];
   if (attachments.length > 0) {
-    lines.push("", "Attachments the user provided:");
-    lines.push(...attachments.map((a) => `- ${a.kind}: ${a.value}`));
+    lines.push(
+      "",
+      "Attachments the user provided (the indented 'read:' lines are machine-extracted from the actual material — ground truth):"
+    );
+    for (const a of attachments) {
+      lines.push(`- ${a.kind}: ${a.value}`);
+      if (a.digest) lines.push(`  ${a.digest}`);
+    }
   } else {
     lines.push("", "Attachments: none.");
   }

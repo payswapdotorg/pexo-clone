@@ -32,7 +32,7 @@ export interface AppendMessageInput {
   role: "user" | "agent";
   markdown: string;
   stage?: string | null;
-  attachments?: { kind: string; value: string }[] | null;
+  attachments?: { kind: string; value: string; digest?: string }[] | null;
 }
 
 /**

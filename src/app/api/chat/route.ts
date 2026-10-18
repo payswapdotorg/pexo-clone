@@ -8,6 +8,7 @@ import {
 } from "@/lib/projects";
 import { deleteProjectArtifacts } from "@/lib/storage";
 import { runAgentTurn } from "@/lib/agent/protocol";
+import { readAttachments } from "@/lib/agent/attachments";
 import { emitMessageCreated } from "@/lib/agent/events";
 
 /**
@@ -99,10 +100,15 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    parsedAttachments = attachments.map((a) => ({
+    const parsed = attachments.map((a) => ({
       kind: (a as { kind: string }).kind.slice(0, 16),
       value: (a as { value: string }).value.slice(0, 500),
     }));
+    /* The attachments pass: actually READ the attached material (image
+       vision, PDF text, URL content) so the plan works from the real
+       content, never a filename alone. Failures become honest notes and
+       never fail the turn. */
+    parsedAttachments = await readAttachments(parsed);
   }
 
   let project;

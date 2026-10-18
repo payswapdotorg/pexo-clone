@@ -59,6 +59,13 @@ INTAKE → PLAN_QUESTIONS → STILL_PREVIEW → CONFIRM_GATE → RENDERING → D
 - INTAKE consumes PROJECT_START (5 credits); the LLM turn must contain the mandated
   shape (What I'd make / N decisions for you / Defaults: Length, Aspect ratio, Palette,
   Sound / closing direct questions).
+- **The attachments pass** (`src/lib/agent/attachments.ts` + `vision.ts`): attached
+  images are read by a vision model (same provider chain as the LLM: OpenRouter →
+  DashScope `qwen-vl-plus` → sandbox z-ai SDK), PDFs and URLs through dependency-free
+  text extraction (FlateDecode + Tj/TJ operators; SSRF-guarded fetch). Every
+  attachment resolves to a `read: …` digest the plan treats as ground truth — or an
+  honest `could not read: …` note it must surface (never a silent filename-only
+  read). Video/audio are kept as reference with an honest note.
 - STILL_PREVIEW consumes PREVIEW (11): one generated still + second-by-second timeline
   (`X–Ys: …`) + limitations + an explicit "say go" ask. The still honors the aspect
   ratio agreed in the conversation (plan default or a later user override; the newest
@@ -112,12 +119,14 @@ bun run dev            # http://localhost:3000
 No seeding is needed — the first login creates the demo user (100 credits).
 Set `VIDRA_DEMO_SECRET` to override the session-signing default.
 
-**AI providers** (`src/lib/agent/llm.ts`): with no provider keys set, the agent
-uses the sandbox `z-ai-web-dev-sdk` gateway (local/sandbox only). Set
-`DASHSCOPE_API_KEY` (Alibaba Model Studio international) to run anywhere with
-`qwen-plus` (LLM), `wan2.2-t2i-flash` (stills) and `wan2.1-t2v-turbo` (video);
-optionally `OPENROUTER_API_KEY` (+ `LLM_MODEL`) as the first-choice LLM with
-automatic fall-through. See `.env.example` for every knob.
+**AI providers** (`src/lib/agent/llm.ts`, `vision.ts`): with no provider keys set,
+the agent uses the sandbox `z-ai-web-dev-sdk` gateway (local/sandbox only — also the
+vision fallback for the attachments pass). Set `DASHSCOPE_API_KEY` (Alibaba Model
+Studio international) to run anywhere with `qwen-plus` (LLM), `qwen-vl-plus`
+(vision, `DASHSCOPE_VISION_MODEL`), `wan2.2-t2i-flash` (stills) and
+`wan2.1-t2v-turbo` (video); optionally `OPENROUTER_API_KEY` (+ `LLM_MODEL` /
+`VISION_MODEL`) as the first-choice LLM/vision with automatic fall-through. See
+`.env.example` for every knob.
 
 **Artifact storage**: set `R2_BUCKET` + `R2_ACCESS_KEY_ID` + `R2_SECRET_ACCESS_KEY`
 + `R2_ENDPOINT` to store stills/videos/uploads in Cloudflare R2 instead of local
