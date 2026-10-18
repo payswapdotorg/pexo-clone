@@ -6,7 +6,7 @@ import ZAI from "z-ai-web-dev-sdk";
  * use the actual attachment content. Mirrors askLLM's chain:
  *  1. OpenRouter    — OPENROUTER_API_KEY (vision-capable LLM_MODEL,
  *                    default gemini-2.5-flash; image sent as a data URL)
- *  2. DashScope     — DASHSCOPE_API_KEY (qwen-vl-plus by default,
+ *  2. DashScope     — DASHSCOPE_API_KEY (qwen3-vl-plus by default,
  *                    DASHSCOPE_VISION_MODEL override; OpenAI-compatible
  *                    multimodal endpoint)
  *  3. z-ai sandbox  — z-ai-web-dev-sdk VLM (local/dev only)
@@ -16,7 +16,7 @@ import ZAI from "z-ai-web-dev-sdk";
  */
 
 const DEFAULT_DASHSCOPE_BASE = "https://dashscope-intl.aliyuncs.com";
-const DEFAULT_DASHSCOPE_VISION_MODEL = "qwen-vl-plus";
+const DEFAULT_DASHSCOPE_VISION_MODEL = "qwen3-vl-plus";
 const DEFAULT_OPENROUTER_VISION_MODEL = "google/gemini-2.5-flash";
 
 /** Images larger than this are not sent to vision models (base64 inflates ~4/3). */

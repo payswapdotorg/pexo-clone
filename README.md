@@ -61,7 +61,7 @@ INTAKE → PLAN_QUESTIONS → STILL_PREVIEW → CONFIRM_GATE → RENDERING → D
   Sound / closing direct questions).
 - **The attachments pass** (`src/lib/agent/attachments.ts` + `vision.ts`): attached
   images are read by a vision model (same provider chain as the LLM: OpenRouter →
-  DashScope `qwen-vl-plus` → sandbox z-ai SDK), PDFs and URLs through dependency-free
+  DashScope `qwen3-vl-plus` → sandbox z-ai SDK), PDFs and URLs through dependency-free
   text extraction (FlateDecode + Tj/TJ operators; SSRF-guarded fetch). Every
   attachment resolves to a `read: …` digest the plan treats as ground truth — or an
   honest `could not read: …` note it must surface (never a silent filename-only
@@ -122,7 +122,7 @@ Set `VIDRA_DEMO_SECRET` to override the session-signing default.
 **AI providers** (`src/lib/agent/llm.ts`, `vision.ts`): with no provider keys set,
 the agent uses the sandbox `z-ai-web-dev-sdk` gateway (local/sandbox only — also the
 vision fallback for the attachments pass). Set `DASHSCOPE_API_KEY` (Alibaba Model
-Studio international) to run anywhere with `qwen-plus` (LLM), `qwen-vl-plus`
+Studio international) to run anywhere with `qwen-plus` (LLM), `qwen3-vl-plus`
 (vision, `DASHSCOPE_VISION_MODEL`), `wan2.2-t2i-flash` (stills) and
 `wan2.1-t2v-turbo` (video); optionally `OPENROUTER_API_KEY` (+ `LLM_MODEL` /
 `VISION_MODEL`) as the first-choice LLM/vision with automatic fall-through. See
