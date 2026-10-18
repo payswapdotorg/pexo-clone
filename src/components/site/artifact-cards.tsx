@@ -64,9 +64,11 @@ export function StillArtifactCard({ artifact }: { artifact: ChatArtifact }) {
 /** "Produced Video" card (AGENT-PROTOCOL S5) — player, badge, actions. */
 export function VideoArtifactCard({
   artifact,
+  projectId,
   projectTitle,
 }: {
   artifact: ChatArtifact;
+  projectId: string;
   projectTitle: string;
 }) {
   const setPendingFixText = useComposerStore((s) => s.setPendingFixText);
@@ -122,7 +124,7 @@ export function VideoArtifactCard({
             <Download className="size-3.5" aria-hidden="true" />
             Download
           </a>
-          <ShareMenu title={projectTitle} compact />
+          <ShareMenu projectId={projectId} title={projectTitle} compact />
           <Dialog open={fixOpen} onOpenChange={setFixOpen}>
             <DialogTrigger asChild>
               <Button

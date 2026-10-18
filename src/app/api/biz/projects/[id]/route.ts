@@ -69,6 +69,7 @@ export async function GET(
       title: project.title,
       status: project.status,
       confirmPolicy: project.confirmPolicy,
+      publicId: project.publicId,
       createdAt: project.createdAt.toISOString(),
       updatedAt: project.updatedAt.toISOString(),
     },

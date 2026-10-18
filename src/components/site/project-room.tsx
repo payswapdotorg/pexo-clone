@@ -142,10 +142,12 @@ function GuidanceCollapsible() {
 
 function MessageItem({
   message,
+  projectId,
   projectTitle,
   showGuidance,
 }: {
   message: ChatMessage;
+  projectId: string;
   projectTitle: string;
   showGuidance: boolean;
 }) {
@@ -250,6 +252,7 @@ function MessageItem({
                   <VideoArtifactCard
                     key={artifact.id}
                     artifact={artifact}
+                    projectId={projectId}
                     projectTitle={projectTitle}
                   />
                 ) : (
@@ -317,11 +320,13 @@ function ChatHeaderRow({
   title,
   status,
   artifacts,
+  initialPublicId,
 }: {
   projectId: string;
   title: string;
   status: ProjectStatus;
   artifacts: ChatArtifact[];
+  initialPublicId: string | null;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -500,7 +505,7 @@ function ChatHeaderRow({
             </SheetContent>
           </Sheet>
 
-          <ShareMenu title={title} />
+          <ShareMenu projectId={projectId} title={title} initialPublicId={initialPublicId} />
         </div>
       </div>
 
@@ -524,6 +529,8 @@ export interface ProjectRoomProps {
   projectId: string;
   initialTitle: string;
   status: ProjectStatus;
+  /** Opt-in public share id (share honesty): null = not shared. */
+  initialPublicId: string | null;
   /** True when the persisted tree shows a user turn the agent has not answered. */
   agentMidTurn: boolean;
   initialEventCursor: number;
@@ -541,6 +548,7 @@ export function ProjectRoom({
   projectId,
   initialTitle,
   status,
+  initialPublicId,
   agentMidTurn,
   initialEventCursor,
   messages,
@@ -655,6 +663,7 @@ export function ProjectRoom({
             <Fragment key={message.id}>
               <MessageItem
                 message={message}
+                projectId={projectId}
                 projectTitle={initialTitle}
                 showGuidance={message.id === firstPlanId}
               />
@@ -698,6 +707,7 @@ export function ProjectRoom({
         title={initialTitle}
         status={status}
         artifacts={artifacts}
+        initialPublicId={initialPublicId}
       />
       {isDesktop ? (
         <ResizablePanelGroup

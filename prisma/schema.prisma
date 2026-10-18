@@ -31,6 +31,9 @@ model Project {
   messages      Message[]
   artifacts     Artifact[]
   feedbacks     Feedback[]
+  /// Opt-in public share id (share honesty): when set, /share/<publicId>
+  /// renders a read-only view of this project. Null = not shared.
+  publicId      String?    @unique
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 

@@ -87,6 +87,10 @@ consumes RENDER (6), sets status working, and produces a playable MP4.
   trained to wait when the next move is theirs. DELIVERY sets **ready**.
 - Every turn is transactional: generation happens first, credits/messages/artifacts
   commit after; failures roll back.
+- Sharing is real and opt-in: the Share menu creates an unguessable public link
+  (`/share/<id>`) that renders a read-only view for anyone — the old behavior
+  (copying a session-scoped URL that only ever worked for the owner) is gone.
+  Revoking or deleting the project kills the link immediately.
 
 **API surface** (name-compatible with the observed original):
 
@@ -96,6 +100,8 @@ consumes RENDER (6), sets status working, and produces a playable MP4.
 | `GET /api/biz/projects?page=&page_size=` | Paginated recent projects (owner-scoped) |
 | `GET/PATCH/DELETE /api/biz/projects/[id]` | Project detail (messages + artifacts + feedback) · rename · delete |
 | `POST /api/biz/projects/[id]/feedback` | Satisfaction rating (good/okay/bad) |
+| `POST /api/biz/projects/[id]/share` | Owner-controlled public sharing: `create` an unguessable id / `revoke` it |
+| `GET /share/[publicId]` | Public read-only project view (conversation + stills + video) — 404s the moment sharing is revoked or the project is deleted |
 | `GET /api/biz/web-push/events?after_event_id=&project_id=` | Long-poll event stream (message/artifact/status/credits) |
 | `GET /api/artifacts/[...path]` | Stills + videos from storage (R2 or disk; Range requests, traversal-safe) |
 | `POST /api/uploads` | Attachment uploads (≤ 8MB: pdf/image/video/audio) |

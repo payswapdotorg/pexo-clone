@@ -128,6 +128,7 @@ export default async function ProjectPage({
       projectId={project.id}
       initialTitle={project.title}
       status={status}
+      initialPublicId={project.publicId}
       agentMidTurn={agentMidTurn}
       initialEventCursor={lastEvent?.id ?? 0}
       messages={messages}
