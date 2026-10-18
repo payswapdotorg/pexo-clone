@@ -274,6 +274,13 @@ async function blockedTurn(
     stage: remainStage,
   });
   await emitMessageCreated(project.id, message);
+  /* Status honesty: a blocked turn hands the ball to the user (top up,
+     then message again) — the pill must not keep spinning. */
+  await db.project.update({
+    where: { id: project.id },
+    data: { status: "waiting" },
+  });
+  await emitProjectStatus(project.id, "waiting");
   return {
     projectId: project.id,
     stage: remainStage,
@@ -281,7 +288,7 @@ async function blockedTurn(
     artifacts: [],
     credits: balance,
     blocked: "credits",
-    status: project.status,
+    status: "waiting",
   };
 }
 
@@ -329,6 +336,14 @@ async function runIntake(
     });
     await emitMessageCreated(project.id, message);
     await emitCreditsUpdated(project.id, spend.balance);
+    /* Status honesty: the plan turn is done — the next move is the
+       user's (answer the questions), so the pill must not keep
+       spinning "Working". */
+    await db.project.update({
+      where: { id: project.id },
+      data: { status: "waiting" },
+    });
+    await emitProjectStatus(project.id, "waiting");
   } catch (err) {
     await rollbackCredits(spend.eventId ?? "");
     throw err;
@@ -340,7 +355,7 @@ async function runIntake(
     markdown,
     artifacts: [],
     credits: spend.balance,
-    status: project.status,
+    status: "waiting",
   };
 }
 
@@ -358,6 +373,16 @@ async function runStillPreview(
       "generate the still preview"
     );
   }
+
+  /* Status honesty: a real generation is about to run (LLM + image
+     model) — "working" is true from here until the still lands and the
+     ball goes back to the user. */
+  await db.project.update({
+    where: { id: project.id },
+    data: { status: "working" },
+  });
+  project = { ...project, status: "working" };
+  await emitProjectStatus(project.id, "working");
 
   const history = await buildHistory(project.id);
   const planExcerpt = await planExcerptFor(project.id);
@@ -380,15 +405,6 @@ async function runStillPreview(
   }
 
   try {
-    if (isReworkAfterDelivery && project.status !== "working") {
-      await db.project.update({
-        where: { id: project.id },
-        data: { status: "working" },
-      });
-      project = { ...project, status: "working" };
-      await emitProjectStatus(project.id, "working");
-    }
-
     const message = await appendMessage(project.id, {
       role: "agent",
       markdown,
@@ -406,6 +422,13 @@ async function runStillPreview(
     await emitMessageCreated(project.id, message);
     await emitArtifactCreated(project.id, artifact);
     await emitCreditsUpdated(project.id, spend.balance);
+    /* Status honesty: the confirm gate — the next move is the user's
+       ("go" or a change request), so hand the ball back visibly. */
+    await db.project.update({
+      where: { id: project.id },
+      data: { status: "waiting" },
+    });
+    await emitProjectStatus(project.id, "waiting");
 
     return {
       projectId: project.id,
@@ -413,7 +436,7 @@ async function runStillPreview(
       markdown,
       artifacts: [toTurnArtifact(artifact)],
       credits: spend.balance,
-      status: project.status,
+      status: "waiting",
     };
   } catch (err) {
     await deleteArtifact(still.url);

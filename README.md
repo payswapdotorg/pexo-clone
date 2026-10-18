@@ -42,10 +42,14 @@ DashScope / OpenRouter, server-side only) · Cloudflare R2 or local-disk
 artifact storage · ffmpeg fallback (sandbox only).
 
 **Data model** (`prisma/schema.prisma`): `User` (credits 100, plan) · `Project`
-(status working|ready, confirmPolicy) · `Message` (role user|agent, markdown, stage,
+(status working|waiting|ready, confirmPolicy) · `Message` (role user|agent, markdown, stage,
 attachments JSON) · `Artifact` (kind still|video, url, filename, durationSec) ·
 `Feedback` (rating good|okay|bad) · `CreditEvent` (ledger) · `ProjectEvent`
-(long-poll event stream). Artifacts are stored through a storage abstraction
+(long-poll event stream). Project status is honest by construction: **working**
+means the agent is genuinely computing (a turn is in flight), **waiting** means
+the next move is the user's (answer the plan questions, confirm the render,
+retry after a failure, top up), **ready** means a video was delivered — the UI
+never shows a spinner while it is the user's turn. Artifacts are stored through a storage abstraction
 (`src/lib/storage.ts`) — Cloudflare R2 (S3-compatible) when `R2_*` env vars are
 set, local `data/artifacts/` otherwise — and served by `/api/artifacts/*` with
 HTTP Range support either way.
@@ -77,6 +81,10 @@ INTAKE → PLAN_QUESTIONS → STILL_PREVIEW → CONFIRM_GATE → RENDERING → D
 consumes RENDER (6), sets status working, and produces a playable MP4.
 - DELIVERY posts the Produced Video card + facts + an honest-limitations note;
   FEEDBACK persists Good/Okay/Bad; Mark-to-fix returns to STILL_PREVIEW.
+- Every turn hands the ball back visibly: status goes to **waiting** whenever the
+  agent finishes (plan, preview, blocked-on-credits) or a turn fails — the UI
+  pill switches from the Working spinner to “Your move” so users are never
+  trained to wait when the next move is theirs. DELIVERY sets **ready**.
 - Every turn is transactional: generation happens first, credits/messages/artifacts
   commit after; failures roll back.
 

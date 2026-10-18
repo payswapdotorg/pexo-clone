@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, ChevronDown, FolderClock, Loader2 } from "lucide-react";
+import { CheckCircle2, ChevronDown, FolderClock, Loader2, MessageCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import {
   Collapsible,
@@ -13,7 +13,7 @@ import {
 interface ProjectRow {
   id: string;
   title: string;
-  status: "working" | "ready";
+  status: "working" | "waiting" | "ready";
   createdAt: number;
   updatedAt: number;
   messageCount: number;
@@ -22,7 +22,11 @@ interface ProjectRow {
 const COLLAPSE_KEY = "vidra_recent_collapsed";
 const PAGE_SIZE = 6;
 
-function StatusChip({ status }: { status: "working" | "ready" }) {
+function StatusChip({
+  status,
+}: {
+  status: "working" | "waiting" | "ready";
+}) {
   if (status === "working") {
     return (
       <span
@@ -34,6 +38,17 @@ function StatusChip({ status }: { status: "working" | "ready" }) {
           <span className="relative inline-flex size-2 rounded-full bg-primary" />
         </span>
         Working
+      </span>
+    );
+  }
+  if (status === "waiting") {
+    return (
+      <span
+        className="flex shrink-0 items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary"
+        aria-label="Status: your move"
+      >
+        <MessageCircle className="size-3" aria-hidden="true" />
+        Your move
       </span>
     );
   }

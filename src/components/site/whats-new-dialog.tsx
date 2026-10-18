@@ -46,7 +46,7 @@ export function WhatsNewDialog({
         if (!next) dismiss();
       }}
     >
-      <DialogContent className="max-w-md rounded-2xl border-border/70 bg-card p-0 overflow-hidden">
+      <DialogContent className="max-w-md rounded-2xl border-border/70 bg-card p-0 overflow-hidden max-sm:top-[10.5rem] max-sm:max-h-[calc(100dvh-12rem)] max-sm:translate-y-0 max-sm:overflow-y-auto">
         <div
           aria-hidden="true"
           className="relative flex h-32 items-center justify-center bg-gradient-to-br from-primary/25 via-accent to-background"

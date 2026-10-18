@@ -33,3 +33,14 @@ export interface ChatFeedback {
   rating: string;
   note: string | null;
 }
+
+/**
+ * Project status vocabulary (status honesty):
+ * - "working": the agent is genuinely computing right now (a turn is in
+ *   flight server-side).
+ * - "waiting": the agent finished its turn — the next move is the user's
+ *   (answer the plan questions, confirm the render, retry after a
+ *   failure, or top up credits).
+ * - "ready": the project delivered a video.
+ */
+export type ProjectStatus = "working" | "waiting" | "ready";

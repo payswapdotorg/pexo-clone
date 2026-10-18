@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 interface ProjectRow {
   id: string;
   title: string;
-  status: "working" | "ready";
+  status: "working" | "waiting" | "ready";
   updatedAt: number;
 }
 
@@ -137,6 +137,8 @@ export function ProjectSidebar({ activeId }: { activeId: string }) {
                           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
                           <span className="relative inline-flex size-2 rounded-full bg-primary" />
                         </>
+                      ) : project.status === "waiting" ? (
+                        <span className="inline-flex size-2 rounded-full bg-primary/70" />
                       ) : (
                         <span className="inline-flex size-2 rounded-full bg-muted-foreground/50" />
                       )}
@@ -145,7 +147,11 @@ export function ProjectSidebar({ activeId }: { activeId: string }) {
                       {project.title}
                     </span>
                     <span className="sr-only">
-                      {project.status === "working" ? "Working" : "Ready"}
+                      {project.status === "working"
+                        ? "Working"
+                        : project.status === "waiting"
+                          ? "Your move"
+                          : "Ready"}
                     </span>
                   </Link>
                   <AlertDialog>

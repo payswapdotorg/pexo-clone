@@ -8,6 +8,7 @@ import type {
   ChatAttachment,
   ChatFeedback,
   ChatMessage,
+  ProjectStatus,
 } from "@/lib/chat-types";
 
 export const metadata: Metadata = {
@@ -107,16 +108,26 @@ export default async function ProjectPage({
     : null;
 
   const lastMessage = messages[messages.length - 1];
-  const agentMidTurn =
-    project.status === "working" &&
-    lastMessage !== undefined &&
-    lastMessage.role === "user";
+  /* Status honesty: "working" is only true while a turn is in flight —
+     which implies the user's message is the latest one. A row that says
+     "working" while the agent's message is the latest is a pre-fix
+     legacy state (the agent idles waiting for the user), so read it as
+     "waiting". */
+  const status: ProjectStatus =
+    project.status === "ready"
+      ? "ready"
+      : project.status === "waiting"
+        ? "waiting"
+        : lastMessage?.role === "agent"
+          ? "waiting"
+          : "working";
+  const agentMidTurn = status === "working";
 
   return (
     <ProjectRoom
       projectId={project.id}
       initialTitle={project.title}
-      status={project.status === "ready" ? "ready" : "working"}
+      status={status}
       agentMidTurn={agentMidTurn}
       initialEventCursor={lastEvent?.id ?? 0}
       messages={messages}

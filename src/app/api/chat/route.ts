@@ -9,7 +9,7 @@ import {
 import { deleteProjectArtifacts } from "@/lib/storage";
 import { runAgentTurn } from "@/lib/agent/protocol";
 import { readAttachments } from "@/lib/agent/attachments";
-import { emitMessageCreated } from "@/lib/agent/events";
+import { emitMessageCreated, emitProjectStatus } from "@/lib/agent/events";
 import { consumeRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 
 /**
@@ -190,6 +190,14 @@ export async function POST(request: Request) {
       await db.creditEvent.deleteMany({ where: { projectId: project.id } });
       await db.project.delete({ where: { id: project.id } });
       await deleteProjectArtifacts(project.id);
+    } else {
+      /* Status honesty: a failed turn on an existing project must not
+         leave the pill spinning "working" forever — the user's move is
+         to retry, so hand the ball back. */
+      await db.project
+        .update({ where: { id: project.id }, data: { status: "waiting" } })
+        .catch(() => undefined);
+      await emitProjectStatus(project.id, "waiting").catch(() => undefined);
     }
     return NextResponse.json(
       {

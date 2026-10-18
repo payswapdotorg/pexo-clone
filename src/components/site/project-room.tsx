@@ -12,6 +12,7 @@ import {
   FolderOpen,
   Lightbulb,
   Loader2,
+  MessageCircle,
   PanelLeft,
   Pencil,
   UserRound,
@@ -53,6 +54,7 @@ import type {
   ChatAttachment,
   ChatFeedback,
   ChatMessage,
+  ProjectStatus,
 } from "@/lib/chat-types";
 
 /**
@@ -318,7 +320,7 @@ function ChatHeaderRow({
 }: {
   projectId: string;
   title: string;
-  status: "working" | "ready";
+  status: ProjectStatus;
   artifacts: ChatArtifact[];
 }) {
   const router = useRouter();
@@ -431,17 +433,31 @@ function ChatHeaderRow({
 
           <Badge
             variant="secondary"
-            className="gap-1.5 rounded-full"
+            className={
+              status === "waiting"
+                ? "gap-1.5 rounded-full border-primary/40 bg-primary/10 text-primary"
+                : "gap-1.5 rounded-full"
+            }
             aria-label={`Project status: ${
-              status === "working" ? "Working" : "Ready"
+              status === "working"
+                ? "Working"
+                : status === "waiting"
+                  ? "Your move"
+                  : "Ready"
             }`}
           >
             {status === "working" ? (
               <Loader2 className="size-3 animate-spin" aria-hidden="true" />
+            ) : status === "waiting" ? (
+              <MessageCircle className="size-3" aria-hidden="true" />
             ) : (
               <CheckCircle2 className="size-3" aria-hidden="true" />
             )}
-            {status === "working" ? "Working" : "Ready"}
+            {status === "working"
+              ? "Working"
+              : status === "waiting"
+                ? "Your move"
+                : "Ready"}
           </Badge>
 
           <Sheet open={assetsOpen} onOpenChange={setAssetsOpen}>
@@ -507,7 +523,7 @@ function ChatHeaderRow({
 export interface ProjectRoomProps {
   projectId: string;
   initialTitle: string;
-  status: "working" | "ready";
+  status: ProjectStatus;
   /** True when the persisted tree shows a user turn the agent has not answered. */
   agentMidTurn: boolean;
   initialEventCursor: number;
