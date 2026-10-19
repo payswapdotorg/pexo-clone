@@ -239,7 +239,7 @@ export function AppHeader({ user }: { user: AppUser }) {
           <Button
             variant="ghost"
             size="icon"
-            className="size-8"
+            className="size-9"
             onClick={() => setWhatsNewOpen(true)}
             aria-label="What's new"
             title="What's new"
@@ -251,7 +251,7 @@ export function AppHeader({ user }: { user: AppUser }) {
           <Button
             variant="ghost"
             size="icon"
-            className="size-8 text-muted-foreground"
+            className="size-9 text-muted-foreground"
             onClick={() => void signOut()}
             disabled={signingOut || pending}
             aria-label="Sign out"

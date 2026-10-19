@@ -189,3 +189,30 @@ The production deployment runs on Vercel with Neon Postgres and Cloudflare R2:
 ## License
 
 MIT — see `LICENSE`. The Pexo name, product, and assets belong to their respective owners.
+
+## Accessibility (WCAG 2.1/2.2 audit pass)
+
+The clone is audited and fixed against the WCAG success criteria a chat-first
+consumer surface actually trips:
+
+- **Focus visible (2.4.7).** The composer textarea intentionally carries no own
+  ring (clean look) — instead the whole composer card glows
+  (`has-[textarea:focus-visible]:ring-2`), so keyboard users always see where
+  they are on the product's primary control. Tab panels got the same treatment.
+- **Contrast (1.4.3).** All helper text renders at full `--muted-foreground`
+  (6.7:1 on the canvas, 6.3:1 on cards — AA). Opacity-diluted variants of the
+  muted token (3.1–3.8:1) are banned from text; hierarchy comes from size and
+  weight, never from contrast.
+- **Reduced motion (2.3.3).** A global `prefers-reduced-motion` rule resolves
+  every animation instantly — the status dots stop bouncing, dialogs snap open.
+- **Target size (2.5.8).** Every control clears the 24px AA floor (footer links
+  and the guidance trigger used to sit at 16px); the send button is 44px, header
+  icons 36px.
+- **Bypass blocks (2.4.1).** Every layout (app, marketing, share viewer) opens
+  with a keyboard-only "Skip to main content" link.
+- **Focus order (2.4.3).** The auto-opening onboarding dialog returns focus to
+  the composer (not `<body>`) when dismissed.
+- **Status messages (4.1.3).** The conversation is a `role=log`, credit balance
+  is `aria-live`, toasts announce, and the project status pill is a
+  `role=status` — screen readers hear every state transition.
+- Screen-reader polish: the project `h1` no longer reads a 13-digit database id.

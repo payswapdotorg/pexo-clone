@@ -159,7 +159,7 @@ export function ProjectSidebar({ activeId }: { activeId: string }) {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="size-7 shrink-0 text-muted-foreground/70 hover:text-destructive-foreground"
+                        className="size-8 shrink-0 text-muted-foreground hover:text-destructive-foreground"
                         aria-label={`Delete project ${project.title}`}
                       >
                         <Trash2 className="size-3.5" aria-hidden="true" />

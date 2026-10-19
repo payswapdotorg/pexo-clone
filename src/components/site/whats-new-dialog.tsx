@@ -37,6 +37,22 @@ export function WhatsNewDialog({
     }
     setSlide(0);
     onOpenChange(false);
+    /*
+     * The dialog auto-opens (no invoking trigger), so Radix has nowhere to
+     * return focus — send keyboard users to the page's composer instead of
+     * dumping them back at the document body (WCAG 2.4.3 focus order).
+     */
+    window.requestAnimationFrame(() => {
+      const target =
+        document.querySelector<HTMLTextAreaElement>("textarea") ??
+        document.querySelector<HTMLElement>("h1");
+      if (target) {
+        if (!(target instanceof HTMLTextAreaElement)) {
+          target.setAttribute("tabindex", "-1");
+        }
+        target.focus({ preventScroll: false });
+      }
+    });
   };
 
   return (

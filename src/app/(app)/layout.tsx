@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/site/app-header";
 import { AppFooter } from "@/components/site/app-footer";
+import { SkipLink } from "@/components/site/skip-link";
 import { getSession } from "@/lib/session";
 
 /**
@@ -18,10 +19,13 @@ export default async function AppLayout({
 
   return (
     <div className="flex min-h-dvh flex-col">
+      <SkipLink />
       <AppHeader
         user={{ name: user.name, credits: user.credits, plan: user.plan }}
       />
-      <main className="flex min-h-0 flex-1 flex-col">{children}</main>
+      <main id="main" className="flex min-h-0 flex-1 flex-col">
+        {children}
+      </main>
       <AppFooter />
     </div>
   );

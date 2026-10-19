@@ -41,7 +41,7 @@ const ATTACH_MENU: { kind: AttachKind; label: string; icon: React.ReactNode }[] 
   ];
 
 const CHIP_STYLE =
-  "whitespace-nowrap rounded-full border border-border/70 bg-card px-4 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  "whitespace-nowrap rounded-full border border-border/70 bg-card px-4 py-2 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 export function HeroComposer({
   projectId = null,
@@ -135,7 +135,7 @@ export function HeroComposer({
 
   return (
     <section aria-label="Prompt composer">
-      <div className="rounded-2xl border border-border/70 bg-card/70 p-3 shadow-2xl shadow-black/40 backdrop-blur-sm sm:p-4">
+      <div className="rounded-2xl border border-border/70 bg-card/70 p-3 shadow-2xl shadow-black/40 backdrop-blur-sm has-[textarea:focus-visible]:border-primary/60 has-[textarea:focus-visible]:ring-2 has-[textarea:focus-visible]:ring-ring/70 sm:p-4">
         <Textarea
           ref={textareaRef}
           value={text}
@@ -262,7 +262,7 @@ export function HeroComposer({
             onClick={() => void send()}
             disabled={!canSend}
             aria-label="Send prompt to the video agent"
-            className="size-10 rounded-xl"
+            className="size-11 rounded-xl"
           >
             {busy ? (
               <Loader2 className="size-4.5 animate-spin" aria-hidden="true" />

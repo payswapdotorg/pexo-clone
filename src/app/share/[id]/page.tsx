@@ -5,6 +5,7 @@ import { Bot, Clapperboard, Eye, UserRound } from "lucide-react";
 import { db } from "@/lib/db";
 import { BRAND } from "@/lib/brand";
 import { Markdown } from "@/components/site/markdown";
+import { SkipLink } from "@/components/site/skip-link";
 
 /**
  * /share/[id] — the public, read-only project view (share honesty).
@@ -96,6 +97,7 @@ export default async function SharedProjectPage({
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <SkipLink />
       <header className="border-b border-border/60 bg-card/40">
         <div className="mx-auto flex w-full max-w-3xl items-center gap-3 px-4 py-4 sm:px-6">
           <Link
@@ -120,7 +122,7 @@ export default async function SharedProjectPage({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6">
+      <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6">
         <h1 className="text-2xl font-bold tracking-tight">{project.title}</h1>
         <p className="mt-1.5 text-xs text-muted-foreground">
           A read-only view shared by the project owner. Videos and stills

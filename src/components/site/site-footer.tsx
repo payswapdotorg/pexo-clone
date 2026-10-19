@@ -28,7 +28,7 @@ export function SiteFooter() {
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
               {BRAND_DESCRIPTION}
             </p>
-            <p className="mt-4 text-xs text-muted-foreground/70">
+            <p className="mt-4 text-xs text-muted-foreground">
               A clean-room behavioral clone built for study. Not affiliated
               with any commercial video product.
             </p>
@@ -42,7 +42,7 @@ export function SiteFooter() {
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="rounded text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="inline-flex min-h-8 items-center rounded text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       {link.label}
                     </Link>

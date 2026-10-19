@@ -76,7 +76,7 @@ export default function HomePage() {
           <div className="mt-10 w-full">
             <HeroComposer />
           </div>
-          <p className="mt-4 text-xs text-muted-foreground/70">
+          <p className="mt-4 text-xs text-muted-foreground">
             {EXAMPLE_PROMPTS.length}+ starting points above — tap one, or write
             your own.
           </p>
@@ -152,7 +152,7 @@ export default function HomePage() {
             <TabsContent
               key={cat.id}
               value={cat.id}
-              className="mt-6 focus-visible:outline-none"
+              className="mt-6 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {cat.cards.map((card) => (
@@ -229,7 +229,7 @@ export default function HomePage() {
             {MODEL_LOGO_STRIP.map((model) => (
               <li
                 key={model}
-                className="text-sm font-semibold uppercase tracking-wider text-muted-foreground/60"
+                className="text-sm font-semibold uppercase tracking-wider text-muted-foreground"
               >
                 {model}
               </li>

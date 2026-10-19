@@ -367,7 +367,7 @@ export function WorkspaceComposer({
 
   return (
     <section aria-label="Prompt composer">
-      <div className="rounded-2xl border border-border/70 bg-card/70 p-3 shadow-2xl shadow-black/40 backdrop-blur-sm sm:p-4">
+      <div className="rounded-2xl border border-border/70 bg-card/70 p-3 shadow-2xl shadow-black/40 backdrop-blur-sm has-[textarea:focus-visible]:border-primary/60 has-[textarea:focus-visible]:ring-2 has-[textarea:focus-visible]:ring-ring/70 sm:p-4">
         {/* Template card (the ~30s promo template) */}
         <Collapsible open={templateOpen} onOpenChange={setTemplateOpen}>
           <CollapsibleTrigger
@@ -377,7 +377,7 @@ export function WorkspaceComposer({
           >
             <LayoutTemplate className="size-4 text-primary" aria-hidden="true" />
             Use the ~30s promo template
-            <span className="ml-auto flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground/60">
+            <span className="ml-auto flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
               {templateOpen ? "Hide" : "Open"}
             </span>
           </CollapsibleTrigger>
@@ -391,7 +391,7 @@ export function WorkspaceComposer({
                   >
                     {field.label}
                     {field.optional && (
-                      <span className="ml-1 text-muted-foreground/60">
+                      <span className="ml-1 font-normal">
                         (optional)
                       </span>
                     )}
@@ -517,7 +517,7 @@ export function WorkspaceComposer({
             </div>
             {picking !== "url" && (
               <>
-                <div className="my-2.5 flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground/60">
+                <div className="my-2.5 flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">
                   <span className="h-px flex-1 bg-border" aria-hidden="true" />
                   or upload
                   <span className="h-px flex-1 bg-border" aria-hidden="true" />
@@ -553,7 +553,7 @@ export function WorkspaceComposer({
                     if (file) void uploadFile(file);
                   }}
                 />
-                <p className="mt-1.5 text-[10px] text-muted-foreground/70">
+                <p className="mt-1.5 text-[10px] text-muted-foreground">
                   PDF, image, video, or audio — 8MB max.
                 </p>
               </>
@@ -659,7 +659,7 @@ export function WorkspaceComposer({
             onClick={() => void send()}
             disabled={!canSend}
             aria-label="Send prompt to the video agent"
-            className="size-10 rounded-xl"
+            className="size-11 rounded-xl"
           >
             {busy ? (
               <Loader2 className="size-4.5 animate-spin" aria-hidden="true" />
@@ -686,7 +686,7 @@ export function WorkspaceComposer({
                 setText(start.prompt);
                 textareaRef.current?.focus();
               }}
-              className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-border/70 bg-card px-4 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-border/70 bg-card px-4 py-2 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
               aria-label={`${start.label} — prefills the composer`}
             >
               {QUICK_START_ICONS[start.id]}

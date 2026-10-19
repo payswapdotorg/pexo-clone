@@ -108,10 +108,10 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <p className="mt-6 max-w-xs text-center text-xs leading-relaxed text-muted-foreground/70">
+      <p className="mt-6 max-w-xs text-center text-xs leading-relaxed text-muted-foreground">
         {LOGIN.note.replace("Terms of Service", "Terms").replace("Privacy Policy", "Privacy")}
       </p>
-      <p className="mt-2 text-center text-[11px] text-muted-foreground/60">
+      <p className="mt-2 text-center text-[11px] text-muted-foreground">
         PC1 scope: {BRAND} auth is a mock demo session — real sign-in arrives in phase 2.
       </p>
     </div>

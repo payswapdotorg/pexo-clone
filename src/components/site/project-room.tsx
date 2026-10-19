@@ -110,7 +110,7 @@ function GuidanceCollapsible() {
   return (
     <Collapsible>
       <CollapsibleTrigger
-        className="mt-3 flex items-center gap-1.5 text-xs font-medium text-primary transition-colors hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="mt-3 flex items-center gap-1.5 rounded-lg py-2 text-xs font-medium text-primary transition-colors hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Read editing guidance"
       >
         <Lightbulb className="size-3.5" aria-hidden="true" />
@@ -191,7 +191,7 @@ function MessageItem({
         <time
           dateTime={message.createdAt}
           suppressHydrationWarning
-          className="ml-auto text-[11px] text-muted-foreground/70"
+          className="ml-auto text-[11px] text-muted-foreground"
         >
           {format(new Date(message.createdAt), "HH:mm")}
         </time>
@@ -413,7 +413,7 @@ function ChatHeaderRow({
           <h1
             className="min-w-0 flex-1 truncate text-base font-semibold tracking-tight sm:text-lg"
             title={title}
-            aria-label={`${title} — project ${projectId}`}
+            aria-label={title}
           >
             {title}
           </h1>
@@ -438,6 +438,7 @@ function ChatHeaderRow({
 
           <Badge
             variant="secondary"
+            role="status"
             className={
               status === "waiting"
                 ? "gap-1.5 rounded-full border-primary/40 bg-primary/10 text-primary"
@@ -475,7 +476,7 @@ function ChatHeaderRow({
               >
                 <FolderOpen className="size-4" aria-hidden="true" />
                 <span className="hidden sm:inline">Assets</span>
-                <span className="tabular-nums text-muted-foreground/70">
+                <span className="tabular-nums text-muted-foreground">
                   {artifacts.length}
                 </span>
               </Button>

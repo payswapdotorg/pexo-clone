@@ -138,7 +138,7 @@ export default function PricingPage() {
             {MODEL_LOGO_STRIP.map((model) => (
               <li
                 key={model}
-                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60"
+                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
               >
                 {model}
               </li>
