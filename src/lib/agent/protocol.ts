@@ -367,10 +367,12 @@ async function runIntake(
     throw err;
   }
 
+  /* Same composed markdown that was stored — the API response, the DB
+     row, and the live event must never disagree. */
   return {
     projectId: project.id,
     stage: STAGES.PLAN_QUESTIONS,
-    markdown,
+    markdown: `${markdown}\n\n${PLAN_COST_FOOTER}`,
     artifacts: [],
     credits: spend.balance,
     status: "waiting",
@@ -448,10 +450,11 @@ async function runStillPreview(
     });
     await emitProjectStatus(project.id, "waiting");
 
+    /* Same composed markdown that was stored (footer included). */
     return {
       projectId: project.id,
       stage: STAGES.STILL_PREVIEW,
-      markdown,
+      markdown: `${markdown}\n\n${STILL_COST_FOOTER}`,
       artifacts: [toTurnArtifact(artifact)],
       credits: spend.balance,
       status: "waiting",
