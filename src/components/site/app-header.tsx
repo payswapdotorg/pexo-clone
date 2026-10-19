@@ -34,7 +34,9 @@ export interface AppUser {
   plan: string;
 }
 
-/** Live credits pill — fed by the composer store (chat responses + events). */
+/** Live credits pill — fed by the composer store (chat responses + events).
+ * Links to /account: the pricing FAQ promises the balance is one click
+ * away from the itemized ledger. */
 function CreditsWidget({ initialCredits }: { initialCredits: number }) {
   const storeCredits = useComposerStore((s) => s.credits);
   const setCredits = useComposerStore((s) => s.setCredits);
@@ -47,27 +49,38 @@ function CreditsWidget({ initialCredits }: { initialCredits: number }) {
   const low = credits < 20;
 
   return (
-    <span
-      aria-live="polite"
-      aria-label={`Credit balance: ${credits}`}
-      title="Credit balance"
+    <Link
+      href="/account"
+      aria-label={`Credit balance: ${credits} — open account page`}
+      title="Credit balance — open account page"
       className={
-        low
+        (low
           ? "flex h-8 items-center gap-1.5 rounded-full border border-amber-500/50 bg-amber-500/10 px-3 text-sm font-semibold text-amber-400"
-          : "flex h-8 items-center gap-1.5 rounded-full border border-border/70 bg-card px-3 text-sm font-semibold text-foreground"
+          : "flex h-8 items-center gap-1.5 rounded-full border border-border/70 bg-card px-3 text-sm font-semibold text-foreground") +
+        " outline-none transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       }
     >
       <Coins
         className={low ? "size-3.5 text-amber-400" : "size-3.5 text-primary"}
         aria-hidden="true"
       />
-      <span className="tabular-nums">{credits}</span>
-    </span>
+      <span className="tabular-nums" aria-live="polite">
+        {credits}
+      </span>
+    </Link>
   );
 }
 
-/** Upgrade dialog — plan cards hitting POST /api/user/upgrade (demo flips). */
-function UpgradeDialog({ currentPlan }: { currentPlan: string }) {
+/** Upgrade dialog — plan cards hitting POST /api/user/upgrade (demo flips
+ * with an instant credit grant). `variant="full"` renders a page-level
+ * primary trigger (account page) instead of the compact header pill. */
+export function UpgradeDialog({
+  currentPlan,
+  variant = "header",
+}: {
+  currentPlan: string;
+  variant?: "header" | "full";
+}) {
   const router = useRouter();
   const setCredits = useComposerStore((s) => s.setCredits);
   const [open, setOpen] = useState(false);
@@ -83,6 +96,7 @@ function UpgradeDialog({ currentPlan }: { currentPlan: string }) {
       });
       const data = (await res.json().catch(() => ({}))) as {
         credits?: number;
+        granted?: number;
         message?: string;
       };
       if (!res.ok) {
@@ -91,7 +105,13 @@ function UpgradeDialog({ currentPlan }: { currentPlan: string }) {
       if (typeof data.credits === "number") {
         setCredits(data.credits);
       }
-      toast.success(`${name} unlocked — demo mode, no billing`);
+      toast.success(
+        typeof data.granted === "number" && data.granted > 0
+          ? `${name} unlocked — ${data.granted.toLocaleString(
+              "en-US"
+            )} demo credits granted, nothing billed`
+          : `${name} unlocked — demo flip, nothing billed`
+      );
       setOpen(false);
       router.refresh();
     } catch (err) {
@@ -106,16 +126,25 @@ function UpgradeDialog({ currentPlan }: { currentPlan: string }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          size="sm"
-          className="h-8 gap-1.5 rounded-full px-3"
-          aria-label="Upgrade your plan"
-        >
-          <Sparkles className="size-3.5" aria-hidden="true" />
-          <span className="hidden sm:inline">Upgrade</span>
-        </Button>
-      </DialogTrigger>
+      {variant === "full" ? (
+        <DialogTrigger asChild>
+          <Button size="lg" className="rounded-xl px-6">
+            <Sparkles className="size-4" aria-hidden="true" />
+            Unlock a plan
+          </Button>
+        </DialogTrigger>
+      ) : (
+        <DialogTrigger asChild>
+          <Button
+            size="sm"
+            className="h-8 gap-1.5 rounded-full px-3"
+            aria-label="Upgrade your plan"
+          >
+            <Sparkles className="size-3.5" aria-hidden="true" />
+            <span className="hidden sm:inline">Upgrade</span>
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-2xl rounded-2xl border-border/70 bg-card">
         <DialogHeader>
           <DialogTitle>Upgrade your plan</DialogTitle>

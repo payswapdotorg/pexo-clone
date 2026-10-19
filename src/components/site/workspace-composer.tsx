@@ -222,7 +222,11 @@ export function WorkspaceComposer({
       }
       if (res.status === 502) {
         toast.error(
-          "The agent hit a snag generating this turn — nothing was charged"
+          "The agent hit a snag generating this turn — nothing was charged",
+          {
+            description:
+              "Your message is saved — send it again to retry, or rephrase slightly if it keeps failing.",
+          }
         );
         return;
       }
@@ -246,7 +250,8 @@ export function WorkspaceComposer({
       setCredits(data.credits);
       if (data.turn?.blocked === "credits") {
         toast.warning("Not enough credits for that step — nothing was charged", {
-          description: "Upgrade from the header to keep going.",
+          description:
+            "Unlock a plan from the header (demo credits land instantly), then send any message to continue.",
         });
       }
       if (projectId) {

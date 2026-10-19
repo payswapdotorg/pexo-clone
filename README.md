@@ -216,3 +216,29 @@ consumer surface actually trips:
   is `aria-live`, toasts announce, and the project status pill is a
   `role=status` — screen readers hear every state transition.
 - Screen-reader polish: the project `h1` no longer reads a 13-digit database id.
+
+## Pricing honesty (credits, ledger, recovery)
+
+Every claim the pricing surface makes is now backed by a real behavior:
+
+- **Flat stage prices, stated up front.** Costs live in one client-safe
+  module (`src/lib/credit-amounts.ts`) imported by both the engine and the
+  marketing copy: 5 cr project start, 11 cr per still preview, 6 cr per
+  render. The pricing FAQ, the account page, and the gate messages all
+  render from the same constants — the copy cannot drift from the charges.
+- **Pre-spend disclosure at every gate.** The plan message states the
+  preview price before you answer; the still preview states the render
+  price before you say "go"; the delivery states rework prices. These
+  lines are deterministic (never LLM-worded) so the numbers are always
+  exact.
+- **A real account page** (`/account`, linked from the credits pill):
+  balance, current plan, flat price card, and the itemized credit ledger —
+  every spend and demo grant with stage, project link, and timestamp.
+  The FAQ's "itemized on the account page" is now literal.
+- **The blocked-credit recovery path actually recovers.** Unlocking a plan
+  grants its demo allowance instantly (`max(current, allowance)` — an
+  unlock never reduces a balance) and writes an `UPGRADE` ledger row; the
+  blocked-turn message points at the real affordance (header / account
+  page) instead of a fictional "top up from the pricing page".
+- **No billing fiction.** The FAQ describes the demo truth: no payments,
+  no rollover/proration stories, nothing expires, failed steps roll back.

@@ -3,7 +3,12 @@
  * (PRODUCT-SPEC §6.1: never reproduce the original's copy verbatim; same
  * structural spirit only). Names of third-party models are factual badges
  * (spec §2 model wall) — text chips, no logos.
+ *
+ * Pricing numbers (per-stage costs, plan allowances) are imported from
+ * credit-amounts.ts so the copy can never drift from what the engine
+ * actually charges.
  */
+import { CREDITS, PLAN_CREDITS } from "@/lib/credit-amounts";
 
 /* ------------------------------------------------------------------ home -- */
 
@@ -459,6 +464,8 @@ export const PLANS: {
   price: string;
   period: string;
   credits: string;
+  /** Numeric demo allowance — mirrors PLAN_CREDITS (credit-amounts.ts). */
+  creditsAmount: number;
   blurb: string;
   cta: string;
   featured: boolean;
@@ -469,6 +476,7 @@ export const PLANS: {
     price: "$0",
     period: "forever",
     credits: "100 credits to start",
+    creditsAmount: PLAN_CREDITS.free,
     blurb: "Try the full loop — plan, preview, and your first renders.",
     cta: "Start free",
     featured: false,
@@ -484,6 +492,7 @@ export const PLANS: {
     price: "$19",
     period: "per month",
     credits: "3,500 credits / mo",
+    creditsAmount: PLAN_CREDITS.pro,
     blurb: "For creators shipping every week.",
     cta: "Unlock Pro",
     featured: false,
@@ -499,6 +508,7 @@ export const PLANS: {
     price: "$49",
     period: "per month",
     credits: "9,000 credits / mo",
+    creditsAmount: PLAN_CREDITS.elite,
     blurb: "For small teams with a real content calendar.",
     cta: "Unlock Elite",
     featured: true,
@@ -514,6 +524,7 @@ export const PLANS: {
     price: "$99",
     period: "per month",
     credits: "18,000 credits / mo",
+    creditsAmount: PLAN_CREDITS.max,
     blurb: "For studios where video is the product.",
     cta: "Unlock Max",
     featured: false,
@@ -529,31 +540,37 @@ export const PLANS: {
 export const CREDITS_FAQ: { q: string; a: string }[] = [
   {
     q: "How do I check my credit balance?",
-    a: "Your balance is always visible in the top-right of the workspace and in every project header. Every spend is itemized on the account page.",
+    a: "Your balance is always visible top-right in the workspace — click it (or the credits pill in any project) to open your account page, where every credit event is itemized with its stage, project, and timestamp.",
   },
   {
     q: "What consumes credits?",
-    a: "The stages of real work: starting a project, planning and previewing (the still + timeline), and the final render. Chatting and editing defaults are free.",
+    a: `Real work only, at flat per-stage prices: ${CREDITS.PROJECT_START} credits when you start a project (the agent's plan), ${CREDITS.PREVIEW} for each still preview, and ${CREDITS.RENDER} for each render. Sending messages, answering the plan questions, and attaching files are free.`,
   },
   {
     q: "Do different outputs cost different amounts?",
-    a: "Yes — cost scales with render length and complexity. The agent states the cost of the next step before it happens, so nothing is a surprise.",
+    a: `No — every stage has one flat price whatever the content (the engine renders one 5-second clip per render). The agent states the next step's cost at every gate before you spend anything, and a failed step is rolled back automatically.`,
   },
   {
-    q: "Do credits roll over?",
-    a: "Monthly plan credits roll over for one month. Free credits do not expire while the account is active.",
+    q: "What happens if I run out mid-project?",
+    a: "The agent stops before charging you — nothing is spent it cannot cover. Unlock a plan from the workspace header and the demo credits land instantly; your project picks up exactly where it stopped.",
   },
   {
-    q: "Can I top up mid-month?",
-    a: "Anytime. Top-ups are one-off packs that never expire and are spent after your monthly balance.",
+    q: "Do credits roll over or expire?",
+    a: "This is a demo deployment — there is no billing, so nothing expires. Your starting credits and any demo plan grants stay on your balance for as long as the workspace exists.",
   },
   {
-    q: "What happens if I cancel?",
-    a: "You keep access to the end of the billing period, and your rendered videos remain downloadable forever.",
+    q: "How do upgrades work?",
+    a: `Instantly, and only ever upward: unlocking a plan flips it the way a purchase would and grants its demo allowance (${PLAN_CREDITS.pro.toLocaleString(
+      "en-US"
+    )} for Pro, ${PLAN_CREDITS.elite.toLocaleString(
+      "en-US"
+    )} for Elite, ${PLAN_CREDITS.max.toLocaleString(
+      "en-US"
+    )} for Max) — your balance is never reduced by switching, and your projects carry over unchanged.`,
   },
   {
-    q: "How do upgrades and downgrades apply?",
-    a: "Upgrades take effect immediately with a prorated charge. Downgrades apply at the next renewal. Your balance and projects carry over either way.",
+    q: "Is anything actually billed?",
+    a: "No. This clone runs in demo mode: the plan cards flip instantly, credits are granted for evaluation, and no payment method is ever asked for. Rendered videos remain downloadable as long as their project exists.",
   },
 ];
 

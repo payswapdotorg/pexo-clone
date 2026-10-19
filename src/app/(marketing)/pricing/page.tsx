@@ -102,6 +102,10 @@ export default function PricingPage() {
             All plans include the full agent loop: planning, preview stills,
             chat revisions, and confirm-gated rendering.
           </p>
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            Demo deployment — plans flip instantly and grant their credits for
+            evaluation; nothing is billed, ever.
+          </p>
         </div>
       </section>
 

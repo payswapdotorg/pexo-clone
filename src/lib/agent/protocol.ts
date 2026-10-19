@@ -254,6 +254,24 @@ async function agreedAspect(projectId: string): Promise<string> {
 /* Blocked turns (insufficient credits — nothing is charged)            */
 /* ------------------------------------------------------------------ */
 
+/** Deterministic cost disclosure appended to gate messages — the pricing
+ * FAQ promises "the agent states the cost of the next step before it
+ * happens"; these lines make that literally true, sourced from CREDITS
+ * (single source of truth), never LLM-worded. */
+function costFooter(nextStep: string): string {
+  return `---\n*Costs: ${nextStep}*`;
+}
+
+const PLAN_COST_FOOTER = costFooter(
+  `answering starts the still preview — ${CREDITS.PREVIEW} credits. Nothing renders until you say go (${CREDITS.RENDER} credits then).`
+);
+const STILL_COST_FOOTER = costFooter(
+  `saying "go" starts the render — ${CREDITS.RENDER} credits. A change request re-previews instead (${CREDITS.PREVIEW} credits).`
+);
+const DELIVERY_COST_FOOTER = costFooter(
+  `changes re-run the preview (${CREDITS.PREVIEW} credits) before any re-render (${CREDITS.RENDER} credits).`
+);
+
 async function blockedTurn(
   user: User,
   project: Project,
@@ -266,7 +284,7 @@ async function blockedTurn(
   const markdown = [
     `I have to stop before I ${action}: that step costs ${CREDITS[stage]} credits and your balance is ${balance}.`,
     "",
-    "Nothing was charged for it. Once you top up or upgrade your plan from the pricing page, send any message here and I'll pick up exactly where we left off.",
+    "Nothing was charged for it. Unlock a plan from the top bar (or your account page, under the credits pill) — this demo grants the new plan's credits instantly — then send any message here and I'll pick up exactly where we left off.",
   ].join("\n");
   const message = await appendMessage(project.id, {
     role: "agent",
@@ -331,7 +349,7 @@ async function runIntake(
   try {
     const message = await appendMessage(project.id, {
       role: "agent",
-      markdown,
+      markdown: `${markdown}\n\n${PLAN_COST_FOOTER}`,
       stage: STAGES.PLAN_QUESTIONS,
     });
     await emitMessageCreated(project.id, message);
@@ -407,7 +425,7 @@ async function runStillPreview(
   try {
     const message = await appendMessage(project.id, {
       role: "agent",
-      markdown,
+      markdown: `${markdown}\n\n${STILL_COST_FOOTER}`,
       stage: STAGES.STILL_PREVIEW,
     });
     const artifact = await db.artifact.create({
@@ -458,6 +476,8 @@ function deliveryMarkdown(
     `**Produced video: \`${filename}\`** — 5 seconds, ${resolution}, ${methodPhrase}.`,
     "",
     `Honest limitations: I verified a single still frame of the look before rendering — I did not review the motion smoothness or pacing, and there is no sound. Give the loop point a look when you play it; if anything drifts, tell me what to change and I'll set up a revised preview before any re-render.`,
+    "",
+    DELIVERY_COST_FOOTER,
   ].join("\n");
 }
 

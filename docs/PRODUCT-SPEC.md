@@ -106,3 +106,17 @@ generation is unavailable in the runtime, fall back to a programmatic renderer
      message the UI surfaces as a toast).
    - Marketing/demo copy must never claim "local-only / nothing persisted"
      when the demo persists to the real database and object storage.
+8. **Pricing honesty** (the credits surface must not promise fiction):
+   - Per-stage costs and plan allowances live in one client-safe constants
+     module (`src/lib/credit-amounts.ts`); marketing copy, the account page,
+     and the agent's gate messages all render from it — copy can never drift
+     from what the engine charges.
+   - The agent states the cost of the next step at every gate (deterministic
+     footer lines, never LLM-worded).
+   - `/account` (linked from the credits pill) itemizes every credit event —
+     spend and demo grant alike — with stage, project link, and timestamp.
+   - Plan unlock grants the plan's demo allowance instantly
+     (`max(current, allowance)`) and records an `UPGRADE` ledger row; the
+     blocked-credit message points only at affordances that actually exist.
+   - Marketing copy never describes billing mechanics that are not real
+     (no rollover/proration/top-up stories in a demo deployment).

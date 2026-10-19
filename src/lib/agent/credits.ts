@@ -1,17 +1,15 @@
 import { db } from "@/lib/db";
+import { CREDITS, type CreditStage } from "@/lib/credit-amounts";
+
+export { CREDITS };
+export type { CreditStage };
 
 /**
  * Credit contract (AGENT-PROTOCOL): per-stage costs and transactional
  * spend/rollback helpers. Spends are atomic (guarded updateMany) so a
- * concurrent request can never drive a balance negative.
+ * concurrent request can never drive a balance negative. The constants
+ * live in src/lib/credit-amounts.ts (client-safe single source of truth).
  */
-export const CREDITS = Object.freeze({
-  PROJECT_START: 5,
-  PREVIEW: 11,
-  RENDER: 6,
-});
-
-export type CreditStage = keyof typeof CREDITS;
 
 export interface SpendResult {
   ok: boolean;
